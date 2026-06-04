@@ -1,0 +1,234 @@
+//二分查找(左边界)
+int Left = 0, Right = n - 1;
+while(Left < Right) {
+    int Mid = Left + (Right - Left) / 2;
+    if(check(Mid))  Right = Mid;
+    else    Left = Mid + 1;
+}
+
+//二分查找(左边界)
+int Left = 0, Right = n - 1;
+while(Left < Right) {
+    int Mid = (Left + Right + 1) >> 1;
+    if(check(Mid))  Left = Mid;
+    else    Right = Mid - 1;
+}
+
+//二分答案
+int Left = 0, Right = 1e9;
+int ans = -1;
+while(Left <= Right) {
+    int Mid = Left + (Right - Left) / 2;
+    if(check(Mid)) {
+        ans = Mid;
+        Right = Mid - 1;    //是Right = Mid - 1还是Left = Mid + 1视具体情况而定
+    }
+    else    Left = Mid + 1;
+}
+
+//stl二分
+lower_bound(a, a + n, x) - a;
+upper_bound(a, a + n, x) - a;
+binary_search(a, a + n, x);
+
+//01背包
+int dp[M];
+for(int i = 1; i <= n; i++)
+    for(int j = m; j >= 0; j--)
+        if(j - w[i] > = 0)
+            dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
+
+//完全背包
+int dp[M];
+for(int i = 1; i <= n; i++)
+    for(int j = w[i]; j <= m; j++)
+            dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
+
+//字符串处理
+string s, t;
+s.substr(pos, len);         //不改变s, 返回截取的子串
+s.insert(pos, t);           //改变s
+s.erase(pos, len);          //改变s
+s.find(t, pos);             //找不到时返回string::npos
+s.replace(pos, len, t);
+s.push_back(c);
+s.pop_back();
+reverse(s.begin(), s.end());//reverse 是 STL 算法，不是 string 的成员函数 (反向迭代器r, 例: rbegin,rend)
+stoi(s);                    //字符串转int
+to_string(n);               //数字转字符串
+
+//字符串分割
+string s = "hello world csp";
+stringstream ss(s);
+string t;
+while(ss >> t) {
+    cout << t << endl;  // 依次输出: hello / world / csp
+}
+
+//字符处理
+char c;              
+isdigit(c);   // 数字
+isalpha(c);   // 字母
+islower(c);   // 小写
+isupper(c);   // 大写
+toupper(c);   // 转大写
+tolower(c);   // 转小写
+
+//dijkstra
+vector< pair<int, int> > graph[N];
+void dijkstra(int s) {
+    priority_queue< pair<int, int>, vector< pair<int, int> >, greater< pair<int, int> > > pq;
+    pq.push({0, s});
+    memset(dist, 0x3f, sizeof(dist));
+    dist[s] = 0;
+    while(!pq.empty()) {
+        auto x = pq.top();
+        pq.pop();
+        if(x.first > dist[x.second])   continue;
+        for(auto& e : graph[x.second]) {
+            if(dist[e.second] > dist[x.second] + e.first) {
+                dist[e.second] = dist[x.second] + e.first;
+                pq.push({dist[e.second], e.second});
+            }
+        }
+    }
+}
+
+//spfa
+vector< pair<int, int> > graph[N];
+int dist[N], cnt[N];
+bool inq[N];
+void spfa(int s) {
+    queue<int> q;
+    q.push(s);
+    memset(dist, 0x3f, sizeof(dist));
+    dist[s] = 0;
+    inq[s] = true;
+    while(!q.empty()) {
+        int x = q.front();
+        q.pop();
+        inq[x] = false;
+        for(auto& e : graph[x]) {
+            if(dist[e.second] > dist[x] + e.first) {
+                dist[e.second] = dist[x] + e.first;
+                if(!inq[e.second]) {
+                    q.push(e.second);
+                    inq[e.second] = true;
+                    if(++cnt[e.second] > n - 1) {
+                        cout << "存在负环";
+                        return;
+                    }
+                }
+            }
+        }
+    }
+}
+
+//拓扑排序
+vector<int> graph[N];
+int in_deg[N];
+void topo() {
+    vector<int> topo;
+    memset(in_deg, 0, sizeof(in_deg)); 
+    for(int i = 1; i <= n; i++) 
+        for(int to : graph[i])
+            in_deg[to]++;
+    queue<int> q;
+    for(int i = 1; i <= n; i++)
+        if(in_deg[i] == 0)
+            q.push(i);
+    while(!q.empty()) {
+        int x = q.front();
+        q.pop();
+        topo.push_back(x);
+        for(int to : graph[x])
+            if(--in_deg[to] == 0)
+                q.push(to);
+    }
+    if(topo.size() != n)
+        cout << "存在环";
+}
+
+//bellmanford
+struct edge {
+    int u, v, w;
+};
+vector<edge> graph;
+int dist[N];
+void bellmanford(int s) {
+    memset(dist, 0x3f, sizeof(dist));
+    dist[s] = 0;
+    for(int i = 1; i <= n - 1; i++) {
+        bool updated = false;
+        for(auto& e : graph) {
+            if(dist[e.u] != INF && dist[e.v] > dist[e.u] + e.w) {
+                dist[e.v] = dist[e.u] + e.w;
+                updated = true;
+            }
+        }
+        if(!updated)    break;
+    }
+    for(auto& e : graph)
+        if(dist[e.u] != INF && dist[e.v] > dist[e.u] + e.w)
+            cout << "存在负环";
+}
+
+//kruskal
+struct edge {
+    int u, v, w;
+};
+bool cmp(edge x, edge y) {
+    return x.w < y.w;
+}
+vector<edge> graph;
+int fa[N];
+int find(int x) {
+    return fa[x] == x ? x : fa[x] = find(fa[x]);
+}
+void unite(int x, int y) {
+    int rx = find(x), ry = find(y);
+    if(rx != ry)    fa[rx] = ry;
+}
+int kruskal() {
+    for(int i = 1; i <= n; i++)
+        fa[i] = i;
+    sort(graph.begin(), graph.end(), cmp);
+    int ans = 0, cnt = 0;
+    for(auto& e : graph) {
+        if(find(e.u) == find(e.v))  continue;
+        else {
+            unite(e.u, e.v);
+            cnt++;
+            ans += e.w;
+        }
+        if(cnt == n - 1)    return ans;
+    }
+    return -1;  //不连通
+}
+
+//floyd
+int dist[N][N];
+void floyd() {
+    for(int k = 1; k <= n; k++)
+        for(int i = 1; i <= n; i++)
+            for(int j = 1; j <= n; j++)
+                if(dist[i][k] != INF && dist[k][j] != INF)
+                    dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]);
+}
+
+//最长上升子序列LIS(贪心 + 二分)
+//Dilworth定理: 系统数 = 严格LIS(LDS)的长度
+vector<int> lis;
+for(int i = 1; i <= n; i++) {
+    auto it = lower_bound(lis.begin(), lis.end(), a[i]);
+    if(it == lis.end()) lis.push_back(a[i]);
+    else *it = a[i];
+}
+int ans = lis.size();
+
+//最长公共子序列LCS
+int dp[N][N];
+for(int i = 1; i <= n; i++)
+    for(int j = 1; j <= m; j++)
+        if(a[i] == b[j]) dp[i][j] = dp[i-1][j-1] + 1;
+        else dp[i][j] = max(dp[i-1][j], dp[i][j-1]);
