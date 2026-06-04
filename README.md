@@ -10,7 +10,7 @@
 
 1. **存档** — 防止本地代码丢失
 2. **复盘** — 偶尔回来看看自己写了些什么, 为日后水帖做准备
-3. **记录** - 随缘更新，看到长时间荒废请踢我。
+3. **记录** — 随缘更新，看到长时间荒废请踢我。
 
 ---
 
@@ -19,29 +19,46 @@
 | OJ | 已解决 | 目标 | 备注 |
 |:---|:---:|:---|:---|
 | [Luogu](https://www.luogu.com.cn/) | — | — | 主线 |
-| [Codeforces](https://codeforces.com/) | — | — | 队内训练用 |
+| [Codeforces](https://codeforces.com/) | — | — | 队内训练 |
 | [LeetCode](https://leetcode.cn/) | — | — | 休闲模式 |
-| [PTA](https://pintia.cn/) | — | — | 校内平台 |
+| [PTA](https://pintia.cn/) | — | — | 课内平台 |
 | [MATIJI](https://www.matiji.net/) | — | — | 周/月赛 |
 
 ---
 
 ## 仓库结构 
 
-├── luogu/                 # 洛谷题解
-│   ├── cpp/               # 源程序文件
-│   │   ├── P1000.cpp
+├── luogu/                    # 洛谷题解
+│   ├── P1001/                # 每个文件夹都对应平台上的一道题
+│   │   ├── P1001.cpp         # 源程序
+│   │   └── programP1001      # 可执行程序
+│   ├── P1064/
+│   │   ├── P1064.cpp
+│   │   ├── P1064_v2.cpp      # 第一次修改
+│   │   ├── P1064_v3.cpp      # 第二次修改
+│   │   └── P1064_rev.cpp     # 赛前复习
+│   └── ...
+├── pintia/                   # 拼题A题解
+│   ├── L1/                   # L1难度
+│   │   ├── L1-003/
+│   │   │   ├── L1-003.cpp
+│   │   │   └── programL1-003
 │   │   └── ...
-│   └── program/           # 可执行程序
-│       ├── program1000/
-│       │   └── ...
+│   └── L2/                   # L2难度
+│       ├── L2-001/
+│       │   ├── L2-001.cpp
+│       │   └── programL2-001
 │       └── ...
-├── codeforces/            # Codeforces 题解（暂未更新）
+├── matiji/                   # MATIJI题解
+│   ├── MC0569/
+│   │   ├── MC0569.cpp
+│   │   └── programMC0569
 │   └── ...
-├── templates/             # 常用模板
-│   ├── 并查集.cpp
+├── templates/                # 常用模板
+│   ├── dijkstra.cpp
+│   ├── kruskal.cpp
 │   └── ...
-└── README.md              # 本文件
+└── README.md                 # 本文件
 
 ---
 
