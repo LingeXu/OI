@@ -10,11 +10,10 @@ int GetAns(int x, int y) {
     int res = -1;
     int sz = log2(k);
     res = max(max(st_up[x][y][sz & 1], st_up[x + k - 1 - ((1 << sz) - 1)][y][sz & 1]), st_up[x + k - 1 - ((1 << sz) - 1)][y + k - 1 - ((1 << sz) - 1)][sz & 1]);
+    if(k <= 3)  return res;
     res = max(res, max(max(st_up[][y][sz & 1]), ), st_up[x + (1 << sz)][y + (1 << (sz - 1))][sz & 1]);
-    st_up[i][j][sz & 1] = max(max(st_up[i][j][(sz - 1) & 1], st_up[i + (1 << (sz - 1))][j][(sz - 1) & 1]), st_up[i + (1 << (sz - 1))][j + (1 << (sz - 1))][(sz - 1) & 1]);
-    st_up[i][j][sz & 1] = max(max(max(st_up[i][j][sz & 1], st_up[i + (1 << (sz - 1))][j + (1 << (sz - 2))][(sz - 1) & 1]), st_up[i + (1 << (sz - 2))][j][(sz - 1) & 1]), st_up[i + (1 << (sz - 2))][j + (1 << (sz - 2))][(sz - 1) & 1]);
+    return res;
 }
-
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(0);
