@@ -14,55 +14,62 @@ void InsertNode(int num) {
     }
 }
 
-//字典树
+//AC自动机
 void init() {
-    trie_node_cnt = 0;
-    memset(trie, 0, sizeof(trie));
-    memset(pass_cnt, 0, sizeof(pass_cnt));
+    trie_node_cnt = 1;
+    memset(trie, 0, sizeof(trie));  
     memset(end_cnt, 0, sizeof(end_cnt));
-    memset(sum_cnt, 0, sizeof(sum_cnt));
+    memset(fail, 0, sizeof(fail));
+    for(int i = 0; i < MAXC; i++)
+        trie[0][i] = 1;
 }
 
-void AddWord(const string& word) {
-    int current = 0;
-    for(char c : word) {
+void Insert(const string& s) {
+    int cur = 1;
+    for(char c : s) {
         int idx = c - 'a';
-        if(!trie[current][idx])
-            trie[current][idx] = ++trie_node_cnt;
-        current = trie[current][idx];
-        pass_cnt[current]++;
+        if(!trie[cur][idx])  
+            trie[cur][idx] = ++trie_node_cnt;
+        cur = trie[cur][idx];
     }
-    end_cnt[current]++;
+    end_cnt[cur]++;
 }
 
 void build() {
     queue<int> q;
-    for(int i = 0; i < MAXC; i++) {
-        if(trie[0][i]) {
-            fail[trie[0][i]] = 0;
-            q.push(trie[0][i]);
-        }
-    }
+    q.push(1);
     while(!q.empty()) {
-        int u = q.front();
+        int x = q.front();
         q.pop();
         for(int i = 0; i < MAXC; i++) {
-            if(trie[u][i]) {
-                fail[trie[u][i]] = trie[fail[u]][i];
-                sum_cnt[trie[u][i]] = end_cnt[trie[u][i]] + sum_cnt[fail[trie[u][i]]];
-                q.push(trie[u][i]);
+            if(trie[x][i]) {
+                fail[trie[x][i]] = trie[fail[x]][i];
+                q.push(trie[x][i]);
             }
-            else    trie[u][i] = trie[fail[u]][i];
+            else trie[x][i] = trie[fail[x]][i];
         }
     }
 }
 
-int query(const string& word) {
-    int current = 0, res = 0;
-    for(char c : word) {
+int query(const string& text) {
+    int cur = 1, ans = 0;
+    for(char c : text) {
         int idx = c - 'a';
-        current = trie[current][idx];
-        res += sum_cnt[current];
+        cur = trie[cur][idx];
+        for(int i = cur; i; i = fail[i]) 
+            ans += end_cnt[i];
     }
-    return res;
+    return ans;
+}
+
+bool contain(const string& text) {
+    int cur = 1;
+    for(char c : text) {
+        int idx = c - 'a';
+        cur = trie[cur][idx];
+        for(int i = cur; i; i = fail[i]) 
+            if(end_cnt[i])   
+                return true;  
+    }
+    return false;
 }

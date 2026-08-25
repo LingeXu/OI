@@ -6,7 +6,6 @@ using namespace std;
 int n, m, r, p;
 vector<int> graph[N];
 int NodeWeight[N], depth[N], fa[N][LOG];
-
 void dfs(int u, int father){
     fa[u][0] = father;
     depth[u] = depth[father] + 1;

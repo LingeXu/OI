@@ -29,6 +29,7 @@ void update(int p, int l, int r, int ql, int qr, int val) {
     int mid = (l + r) >> 1;
     if(ql <= mid)   update(2 * p, l, mid, ql, qr, val);
     if(qr > mid)    update(2 * p + 1, mid + 1, r, ql, qr, val);
+    sum[p] = sum[2 * p] + sum[2 * p + 1];
 }
 
 int query(int p, int l, int r, int ql, int qr) {
