@@ -18,19 +18,20 @@
 
 | 平台 | 已收录 | 备注 |
 |:---|:---:|:---|
-| [Luogu](https://www.luogu.com.cn/) | 375 题 | 主线 |
-| [Codeforces](https://codeforces.com/) | 7 题 | 队内训练 |
-| [Nowcoder](https://ac.nowcoder.com/) | 3 题 | 牛客练习 |
+| [Luogu](https://www.luogu.com.cn/) | 392 题 | 主线 |
+| [Codeforces](https://codeforces.com/) | 16 题 | 队内训练 |
+| [Nowcoder](https://ac.nowcoder.com/) | 4 题 | 牛客练习 |
 | [MATIJI](https://www.matiji.net/) | 5 题 | 周/月赛 |
 | [PTA](https://pintia.cn/) | 2 题 | 课内平台 |
 | [LeetCode](https://leetcode.cn/) | — | 休闲模式 |
-| 2026 牛客暑期多校 | 7 场 | 每场按 `场次/题号` 组织 |
+| 2026 牛客暑期多校 | 8 场 | 每场按 `场次/题号` 组织 |
 | 2026 SHUPC-summer | 3 题 | 个人邀请赛 |
 | 2026 上海市赛 | 1 题 | |
+| 2026 集训队个人赛 | 3 场 | 按 `日期/题号` 组织 |
 | 胜意杯 | 5 题 | |
-| 模板库 | 25 个 | `templates/` |
+| 模板库 | 24 个 | `templates/` |
 
-> 统计口径：一个题目文件夹计 1 题，统计于 2026-08-13。
+> 统计口径：一个题目文件夹计 1 题，统计于 2026-09-04。
 
 ---
 
@@ -48,6 +49,9 @@ OI/
 ├── matiji/                         # MATIJI
 ├── pintia/                         # PTA
 ├── 2026牛客暑期多校/                # 比赛：按场次组织（第一场/B/B.cpp）
+├── 2026.8.21集训队个人赛/           # 集训队个人赛：按日期组织（A/A.cpp）
+├── 2026.9.1集训队个人赛/
+├── 2026.9.3集训队个人赛/
 ├── 2026SHUPC-summer/               # SHUPC 个人邀请赛
 ├── 2026上海市赛/
 ├── 胜意杯/
