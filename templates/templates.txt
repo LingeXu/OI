@@ -1,29 +1,13 @@
-//二分查找(左边界)
-int Left = 0, Right = n - 1;
-while(Left < Right) {
-    int Mid = Left + (Right - Left) / 2;
-    if(check(Mid))  Right = Mid;
-    else    Left = Mid + 1;
-}
-
-//二分查找(左边界)
-int Left = 0, Right = n - 1;
-while(Left < Right) {
-    int Mid = (Left + Right + 1) >> 1;
-    if(check(Mid))  Left = Mid;
-    else    Right = Mid - 1;
-}
-
 //二分答案
 int Left = 0, Right = 1e9;
 int ans = -1;
 while(Left <= Right) {
-    int Mid = Left + (Right - Left) / 2;
-    if(check(Mid)) {
-        ans = Mid;
-        Right = Mid - 1;    //是Right = Mid - 1还是Left = Mid + 1视具体情况而定
+    int mid = Left + (Right - Left) / 2;
+    if(check(mid)) {
+        ans = mid;
+        Right = mid - 1;    //是Right = Mid - 1还是Left = Mid + 1视具体情况而定
     }
-    else    Left = Mid + 1;
+    else    Left = mid + 1;
 }
 
 //stl二分
@@ -32,32 +16,31 @@ upper_bound(a, a + n, x) - a;
 binary_search(a, a + n, x);
 
 //01背包
-int dp[M];
 for(int i = 1; i <= n; i++)
-    for(int j = m; j >= 0; j--)
-        if(j - w[i] > = 0)
-            dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
+    for(int j = m; j >= w[i]; j--)
+        dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
 
 //完全背包
-int dp[M];
 for(int i = 1; i <= n; i++)
     for(int j = w[i]; j <= m; j++)
             dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
 
 //字符串处理
 string s, t;
-s.substr(pos, len);         //不改变s, 返回截取的子串
-s.insert(pos, t);           //改变s
-s.erase(pos, len);          //改变s
-s.find(t, pos);             //找不到时返回string::npos
+s.substr(pos, len);             //不改变s, 返回截取的子串
+s.insert(pos, t);
+s.erase(pos, len);              //改变s
+s.find(t, pos);                 //找不到时返回string::npos
 s.replace(pos, len, t);
 s.push_back(c);
 s.pop_back();
-reverse(s.begin(), s.end());//reverse 是 STL 算法，不是 string 的成员函数 (反向迭代器r, 例: rbegin,rend)
-stoi(s);                    //字符串转int
-to_string(n);               //数字转字符串
+reverse(s.begin(), s.end());
+stoi(s);                        //字符串转int
+to_string(n);                   //数字转字符串
 
 //字符串分割
+
+//法一
 string s = "hello world csp";
 stringstream ss(s);
 string t;
@@ -65,8 +48,20 @@ while(ss >> t) {
     cout << t << endl;  // 依次输出: hello / world / csp
 }
 
-//字符处理
-char c;              
+//法二
+int pos = 0;
+while(pos < (int)s.size()) {
+    int space = s.find(' ', pos);
+    if(space == string::npos) {
+        cout << s.substr(pos) << endl;  //最后一个单词
+        break;
+    }
+    cout << s.substr(pos, space - pos) << endl;
+    pos = space + 1;
+}
+
+//字符操作
+char c;
 isdigit(c);   // 数字
 isalpha(c);   // 字母
 islower(c);   // 小写
@@ -129,8 +124,8 @@ vector<int> graph[N];
 int in_deg[N];
 void topo() {
     vector<int> topo;
-    memset(in_deg, 0, sizeof(in_deg)); 
-    for(int i = 1; i <= n; i++) 
+    memset(in_deg, 0, sizeof(in_deg));
+    for(int i = 1; i <= n; i++)
         for(int to : graph[i])
             in_deg[to]++;
     queue<int> q;
@@ -236,7 +231,7 @@ for(int i = 1; i <= n; i++)
 //换根DP
 void dfs1(int u, int fa) {
     sz[u] = 1;
-    dp[u] = 0;
+    dp[u] = 0;  // 子树内所有节点到u的距离之和
     for(int v : graph[u]) {
         if(v == fa)
             continue;
@@ -245,7 +240,7 @@ void dfs1(int u, int fa) {
         dp[u] += (dp[v] + sz[v]);
     }
 }
-    ans[root] = dp[root];
+//主函数中调用: ans[root] = dp[root];
 void dfs2(int u, int fa) {
     for(int v : graph[u]) {
         if(v == fa)
@@ -269,32 +264,32 @@ ll fastpow(ll a, ll n) {
 }
 
 //马拉车
-string init(string s) {
-    string t = "#";
-    for (char c : s) {
-        t += c;
-        t += '#';
+string init(const string& s) {
+    string res = "*";
+    for(char c : s) {
+        res += c;
+        res += '*';
     }
-    return t;
+    return res;
 }
 
-int manacher(string s) {
+int manacher(const string & s) {
+    int res = 0;
     string t = init(s);
     int n = t.size();
-    vector<int> d(n, 0); 
-    int L = 0, R = -1;   
-    int ans = 0;
-    for (int i = 0; i < n; i++) {
-        int k = (i > R) ? 1 : min(d[L + R - i], R - i + 1);
-        while (i - k >= 0 && i + k < n && t[i - k] == t[i + k]) k++;
-        d[i] = k--;
-        if (i + k > R) {
+    vector<int> d(n);
+    int L = -1, R = -1;
+    for(int i = 0; i < n; i++) {
+        int k = (i > R ? 1 : min(d[L + R - i] + 1, R - i + 1));
+        while(i - k >= 0 && i + k < n && t[i - k] == t[i + k])  k++;
+        d[i] = --k;
+        if(i + k > R) {
             L = i - k;
             R = i + k;
         }
-        ans = max(ans, d[i] - 1); 
+        res = max(res, d[i]);
     }
-    return ans;
+    return res;
 }
 
 //欧拉筛
@@ -306,7 +301,7 @@ vector<int> euler_sieve(int n) {
     for(int i = 2; i <= n; i++) {
         if(is_prime[i])
             primes.push_back(i);
-        for(int j = 0; j < primes.size() && i * primes[j] <= n; j++) {
+        for(int j = 0; j < primes.size() && i * primes[j] <= n; j++) {  //i * primes[j] <= n
             is_prime[i * primes[j]] = false;
             if(i % primes[j] == 0)  break;
         }
@@ -315,12 +310,14 @@ vector<int> euler_sieve(int n) {
 }
 
 //树的直径
+//法一: 树上dp
 int dfs(int u, int fa) {
     int max1 = 0, max2 = 0;
-    for(int v : graph[u]) {
+    for(auto& e : graph[u]) {
+        int w = e.first, v = e.second;
         if(v == fa)
             continue;
-        int d = dfs(v, u) + 1;
+        int d = dfs(v, u) + w;
         if(d > max1) {
             max2 = max1;
             max1 = d;
@@ -329,6 +326,29 @@ int dfs(int u, int fa) {
     }
     ans = max(ans, max1 + max2);
     return max1;
+}
+
+//法二: 两次dfs
+void dfs(int u, int fa, int d) {
+    parent[u] = fa;
+    dis[u] = d;
+    if(d > dis[far])    far = u;
+    for(auto& e : graph[u]) {
+        int w = e.first, v = e.second;
+        if(v == fa)
+            continue;
+        dfs(v, u, d + w);
+    }
+}
+
+int get_diameter() {
+    far = 1;
+    dfs(1, 0, 0);
+    node1 = far;
+    far = node1;
+    dfs(node1, 0, 0);
+    node2 = far;
+    return dis[far];
 }
 
 //树上最大独立集
@@ -377,6 +397,7 @@ void update(int p, int l, int r, int ql, int qr, int val) {
     int mid = (l + r) >> 1;
     if(ql <= mid)   update(2 * p, l, mid, ql, qr, val);
     if(qr > mid)    update(2 * p + 1, mid + 1, r, ql, qr, val);
+    sum[p] = sum[2 * p] + sum[2 * p + 1];
 }
 
 int query(int p, int l, int r, int ql, int qr) {
@@ -393,4 +414,165 @@ int query(int p, int l, int r, int ql, int qr) {
 //最大公约数
 int gcd(int a, int b) {
     return b == 0 ? a : gcd(b, a % b);  //需要确保第一个参数大于等于第二个参数
+}
+
+//KMP
+vector<int> init(const string& pat) {
+    int n = pat.size();
+    vector<int> res(n + 1);
+    res[0] = -1;
+    int i = 0, j = -1;
+    while(i < n) {
+        if(j == -1 || pat[i] == pat[j])
+            res[++i] = ++j;
+        else    j = res[j];
+    }
+    return res;
+}
+
+vector<int> KMP(const string& ob, const string& pat) {
+    vector<int> res;
+    int n = ob.size(), m = pat.size();
+    vector<int> next = init(pat);
+    int i = 0, j = 0;
+    while(i < n) {
+        if(j == -1 || ob[i] == pat[j]) {
+            i++;
+            j++;
+        }
+        else    j = next[j];
+        if(j == m) {
+            res.push_back(i - m);
+            j = next[j];
+        }
+    }
+    return res;
+}
+
+//trie
+
+//二进制trie
+void init() {
+    trie_node_cnt = 0;
+    memset(trie, 0, sizeof(trie));
+}
+
+void InsertNode(int num) {
+    int current = 0;
+    for(int i = MAX_BITS; i >= 0;i--) {
+        int bit = (num >> i) & 1;
+        if(!trie[current][bit])
+            trie[current][bit] = ++trie_node_cnt;
+        current = trie[current][bit];
+    }
+}
+
+//AC自动机
+void init() {
+    trie_node_cnt = 1;
+    memset(trie, 0, sizeof(trie));
+    memset(end_cnt, 0, sizeof(end_cnt));
+    memset(fail, 0, sizeof(fail));
+    for(int i = 0; i < MAXC; i++)
+        trie[0][i] = 1;
+}
+
+void Insert(const string& s) {
+    int cur = 1;
+    for(char c : s) {
+        int idx = c - 'a';
+        if(!trie[cur][idx])
+            trie[cur][idx] = ++trie_node_cnt;
+        cur = trie[cur][idx];
+    }
+    end_cnt[cur]++;
+}
+
+void build() {
+    queue<int> q;
+    q.push(1);
+    while(!q.empty()) {
+        int x = q.front();
+        q.pop();
+        for(int i = 0; i < MAXC; i++) {
+            if(trie[x][i]) {
+                fail[trie[x][i]] = trie[fail[x]][i];
+                q.push(trie[x][i]);
+            }
+            else trie[x][i] = trie[fail[x]][i];
+        }
+    }
+}
+
+int query(const string& text) {
+    int cur = 1, ans = 0;
+    for(char c : text) {
+        int idx = c - 'a';
+        cur = trie[cur][idx];
+        for(int i = cur; i; i = fail[i])
+            ans += end_cnt[i];
+    }
+    return ans;
+}
+
+bool contain(const string& text) {
+    int cur = 1;
+    for(char c : text) {
+        int idx = c - 'a';
+        cur = trie[cur][idx];
+        for(int i = cur; i; i = fail[i])
+            if(end_cnt[i])
+                return true;
+    }
+    return false;
+}
+
+//树状数组
+int lowbit(int x) {
+    return x & (-x);
+}
+
+void add(int idx, int delta) {  //也可用于预处理
+    for(int i = idx; i <= n; i += lowbit(i))    tree[i] += delta;
+}
+
+ll presum(int pos) {
+    ll res = 0;
+    for(int i = pos; i > 0; i -= lowbit(i))    res += 1LL * tree[i];
+    return res;
+}
+ll query(int l, int r) {
+    return presum(r) - presum(l - 1);
+}
+
+//扩展欧几里得
+int exgcd(int a, int b, int& x, int& y) {
+    if(b == 0) {
+        x = 1;
+        y = 0;
+        return a;
+    }
+    int x1, y1;
+    int gcd = exgcd(b, a % b, x1, y1);
+    x = y1;
+    y = x1 - (a / b) * x;
+    return gcd;
+}
+
+bool solve(int a, int b, int c, int& x, int& y) {
+    int gcd = exgcd(a, b, x, y);
+    if(c % gcd != 0)    return false;
+    x *= (c / gcd);
+    y *= (c / gcd);
+    return true;
+}
+
+//逆元
+bool modular_inverse(int a, int p, int& x) {
+    int y;
+    int gcd = exgcd(a, p, x, y);
+    if(gcd != 1)    return false;
+    x %= p;
+    if(x < 0)   x += p;
+    return true;
 }

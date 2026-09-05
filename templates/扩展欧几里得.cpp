@@ -1,4 +1,4 @@
-int exgcd(int a, int b, int& x, int& y) {   //请确保a > b
+int exgcd(int a, int b, int& x, int& y) {
     if(b == 0) {
         x = 1;
         y = 0;

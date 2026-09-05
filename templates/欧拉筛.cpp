@@ -6,7 +6,7 @@ vector<int> euler_sieve(int n) {
     for(int i = 2; i <= n; i++) {
         if(is_prime[i])
             primes.push_back(i);
-        for(int j = 0; j < primes.size() && i * primes[j] <= n; j++) {
+        for(int j = 0; j < primes.size() && i * primes[j] <= n; j++) {  //i * primes[j] <= n
             is_prime[i * primes[j]] = false;
             if(i % primes[j] == 0)  break;
         }

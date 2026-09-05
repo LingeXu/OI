@@ -22,11 +22,12 @@ while(ss >> t) {
 //法二
 int pos = 0;
 while(pos < (int)s.size()) {
-    if(s.find(' ', pos) == string::npos) {
-        string word = s.substr(pos);
+    int space = s.find(' ', pos);
+    if(space == string::npos) {
+        cout << s.substr(pos) << endl;  //最后一个单词
         break;
     }
-    string word = s.substr(pos, space - pos);
+    cout << s.substr(pos, space - pos) << endl;
     pos = space + 1;
 }
 
