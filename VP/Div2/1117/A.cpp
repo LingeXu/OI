@@ -3,23 +3,27 @@ using namespace std;
 int t, n, m;
 void solve() {
     cin >> n >> m;
-    int exist[26];
+    bool exist[26];
     memset(exist, 0, sizeof(exist));
     for(int i = 0; i < n; i++) {
         string s;
-        if (!(cin >> s)) return;   
+        cin >> s; 
         char c = s[0];
-        exist[tolower(c) - 'a'] = true;
+        if(c >= 'a' && c <= 'z') {
+            int idx = c - 'a';
+            exist[idx] = true;
+        }
     }
     for(int i = 0; i < m; i++) {
         string s;
-        if (!(cin >> s)) return;
+        cin >> s;
         for(char c : s) {
-            int idx = tolower(c) - 'a';
- 
-            if(!exist[idx]) {
-                cout << "NO\n";
-                return;
+            if(c >= 'A' && c <= 'Z') {
+                int idx = c - 'A';
+                if(!exist[idx]) {
+                    cout << "NO\n";
+                    return;
+                }
             }
         }
     }
