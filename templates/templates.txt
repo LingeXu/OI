@@ -11,9 +11,202 @@ while(Left <= Right) {
 }
 
 //stl二分
-lower_bound(a, a + n, x) - a;
-upper_bound(a, a + n, x) - a;
-binary_search(a, a + n, x);
+//数组需有序, 返回下标; 自定义比较见 lambda自定义比较.cpp
+lower_bound(a, a + n, x) - a;       //第一个 >= x 的位置
+upper_bound(a, a + n, x) - a;       //第一个 >  x 的位置
+binary_search(a, a + n, x);         //是否存在, 返回 bool
+//vector用法: lower_bound(v.begin(), v.end(), x) - v.begin();
+
+//步长二分: 不要求 f 单调, 只要求相邻步长 |f(x+1)-f(x)| <= 1
+//前提: 两端异类, f(l) > k 且 f(r) <= k
+//     (离散中间值定理: 步长<=1 的函数从 >k 走到 <=k 必然踩中 k, 故 [l,r] 内必有解)
+//原理: 二分始终维持两端异类, 收缩到 r==l+1 时
+//     f(r) >= f(r-1)-1 >= k 且 f(r) <= k  =>  f(r) == k
+int l = pos1, r = pos2;    //f(l) > k, f(r) <= k
+while(r - l > 1) {
+    int mid = l + (r - l) / 2;
+    if(f(mid) > k)    l = mid;
+    else    r = mid;
+}
+cout << r << '\n';    //此时 f(r) == k
+
+//镜像方向: 两端为 f(l) < k, f(r) >= k 时, 条件取反
+//    if(f(mid) < k)    l = mid;
+//    else    r = mid;
+
+//配套: k == f最大值 -> 直接输出取到最大值的位置; k > 最大值 -> 无解
+//     l 取取到最大值的位置, r 取所有坐标之外的位置(如 max坐标+2)使 f(r)==0
+
+//双指针/尺取: 维护连续段 [l, r], r 右移时 l 单调右移, 总复杂度 O(n)
+//场景: 最长/最短连续子段满足某条件、两数和、去重三数和
+
+//尺取框架: 仅当"条件随窗口单调变化"(l 只能右移不能回退)时可用
+//int l = 1, ans = 0;
+//for(int r = 1; r <= n; r++) {
+//    add(a[r]);                       //扩展右端, 更新状态
+//    while(不满足条件) {
+//        del(a[l]);                   //收缩左端, 更新状态
+//        l++;
+//    }
+//    ans = max(ans, r - l + 1);       //此时 [l, r] 满足条件
+//}
+
+//两数之和: 有序数组 a[1..n] 中是否存在 a[i] + a[j] == target
+bool two_sum(int target) {
+    int l = 1, r = n;
+    while(l < r) {
+        if(a[l] + a[r] == target)    return true;
+        else if(a[l] + a[r] < target)    l++;
+        else    r--;
+    }
+    return false;
+}
+
+//三分搜索: 单峰(单谷)函数求极值, O(log n)
+//前提: f 在 [L, R] 上严格先减后增(下凸求最小值)或先增后减(上凸求最大值)
+
+//整数域三分: 下凸求最小值
+int l = L, r = R;
+while(r - l > 2) {                       //剩 <= 3 个点时退出, 逐一比较
+    int m1 = l + (r - l) / 3;
+    int m2 = r - (r - l) / 3;
+    if(f(m1) < f(m2))    r = m2;         //最小值在 [l, m2]
+    else    l = m1;                      //最小值在 [m1, r]
+}
+int ans = f(l);
+for(int i = l + 1; i <= r; i++)    ans = min(ans, f(i));
+
+//浮点域三分: 迭代 100~200 次, 或 while(r - l > eps)
+//double l = L, r = R;
+//for(int t = 0; t < 200; t++) {
+//    double m1 = l + (r - l) / 3;
+//    double m2 = r - (r - l) / 3;
+//    if(f(m1) < f(m2))    r = m2;
+//    else    l = m1;
+//}
+//ans 取 l(或 (l+r)/2)
+
+//前缀和 + 哈希: 统计"子段和/异或 = k"类问题, O(n)
+//核心: 子段 [l, r] 的和 = pref[r] - pref[l-1], 固定 r 时在哈希表里查满足条件的 l-1
+
+//子段和为 k 的个数
+ll count_sum_k(ll k) {
+    map<ll, int> mp;                     //前缀和 -> 出现次数(用 unordered_map 更快)
+    mp[0] = 1;                           //空前缀
+    ll pref = 0, ans = 0;
+    for(int i = 1; i <= n; i++) {
+        pref += a[i];
+        ans += mp[pref - k];             //之前有多少个前缀和为 pref - k
+        mp[pref]++;
+    }
+    return ans;
+}
+
+//子段异或为 k 的个数: 把 - 换成 ^, 查 mp[pref ^ k]
+//子段和为 k 的倍数: 用余数做键, 键 = (pref % k + k) % k, 查 mp[pref % k] 自身
+//配套模型: 连续子段问题先想"前缀和 + 双指针/哈希/排序", 如 0-1 等量子段(1 记 +1, 0 记 -1)
+
+//曼哈顿距离 <=> 切比雪夫距离 的坐标变换(45° 旋转)
+
+//曼哈顿 d = |x1-x2| + |y1-y2|
+//变换 (x, y) -> (u, v) = (x+y, x-y) 后, 曼哈顿距离 = 切比雪夫距离 max(|u1-u2|, |v1-v2|)
+//切比雪夫 d = max(|x1-x2|, |y1-y2|)
+//变换 (x, y) -> ((x+y)/2, (x-y)/2) 后, 切比雪夫距离 = 曼哈顿距离
+
+//用途:
+//1. "到某点曼哈顿距离 <= k 的点数": 菱形很难数 -> 旋转后是正方形, 二维前缀和 O(1)
+//2. "与若干点曼哈顿距离的最大值最小": 旋转后只需维护 u, v 的最大最小值, 不用二分图/最优解搜索
+//3. "n 个点两两切比雪夫距离最大值": 直接 max(maxu-minu, maxv-minv)
+//注意: 变换后坐标可能为半整数/负值, 离散化或整体平移处理
+
+//lambda自定义比较: 比较器必须满足严格弱序(用 < 或 >, 不能用 <= / >=)
+
+//sort: 返回 true 表示 x 应排在 y 前面
+sort(a.begin(), a.end(), [](const T& x, const T& y) {
+    return x.w < y.w;                //按w升序
+});
+sort(a.begin(), a.end(), [](const T& x, const T& y) {
+    return tie(x.w, x.v) < tie(y.w, y.v);    //多关键字: 先w后v升序
+});
+
+//lower_bound: 找第一个满足 comp(元素, 值) 为假的位置
+//前提: 数组已按"被比较的键"有序, 比较器形如 comp(元素, 值)
+//找第一个 w >= v 的下标:
+lower_bound(a.begin(), a.end(), v, [](const T& x, int val) {
+    return x.w < val;
+}) - a.begin();
+
+//upper_bound: 找第一个 comp(值, 元素) 为真的位置, 注意参数顺序是 (值, 元素)
+//找第一个 w > v 的下标:
+upper_bound(a.begin(), a.end(), v, [](int val, const T& x) {
+    return val < x.w;
+}) - a.begin();
+
+//对pair的second二分: pair已按first有序且second单调递增时可用(如区间左端点有序且互不相交)
+lower_bound(a.begin(), a.end(), v, [](const pair<int, int>& p, int val) {
+    return p.second < val;
+}) - a.begin();
+
+//priority_queue: 与sort相反, > 得到小根堆; C++17需构造时传入比较器
+auto cmp = [](const T& x, const T& y) {
+    return x.w > y.w;
+};
+priority_queue<T, vector<T>, decltype(cmp)> pq(cmp);
+
+//set/map: 比较器写在模板参数里, 构造时同样要传实例
+auto cmp2 = [](int x, int y) {
+    return x > y;                    //降序
+};
+set<int, decltype(cmp2)> st(cmp2);
+
+//区间窗口相交: 求定长窗口 [x, x+m-1] 覆盖的点数; 区间按 l 排序且互不相交(则 r 也单调)
+//需预定义: vector<pair<int,int>> inf(n);  vector<int> pref(n + 1);
+//         pref[i + 1] = pref[i] + inf[i].second - inf[i].first + 1;
+//口诀: 左端找 r, 右端找 l, 中间全加两头修剪, 一个if管越界
+int f(int x) {
+    int e = x + m - 1;
+    //第一个右端够到 x 的区间(不存在时 lower_bound 返回 end, pos1 = n)
+    int pos1 = lower_bound(inf.begin(), inf.end(), x,
+        [](const pair<int,int>& p, int v) { return p.second < v; }) - inf.begin();
+    //最后一个左端不超过 e 的区间(不存在时 upper_bound 返回 begin, pos2 = -1)
+    int pos2 = upper_bound(inf.begin(), inf.end(), make_pair(e, LLONG_MAX)) - inf.begin() - 1;
+    if(pos1 > pos2)    return 0;    //哨兵 n / -1 自动落入此分支, 且 return 在解引用之前, 不会越界
+    return pref[pos2 + 1] - pref[pos1]    //[pos1, pos2] 全部区间全长
+        - max(0LL, x - inf[pos1].first)   //修剪左端: x 落在区间内部时左边露出的部分
+        - max(0LL, inf[pos2].second - e); //修剪右端: e 落在区间内部时右边露出的部分
+}
+
+//多组数据与时间戳: 每组数据的重置技巧
+
+//vector 重置
+v.clear();                 //清空所有元素, 容量不变
+v.assign(n, 0);            //重置为 n 个 0
+v.resize(n);               //调整长度到 n(新增部分自动为 0)
+v.resize(n, val);          //新增部分填 val
+v.swap(vector<int>());     //连容量一起释放(超大 vector 清空用)
+
+//时间戳: 用全局版本号代替 memset, 每组 O(1) 而不是 O(N)
+//原理: vis[x] 记录"x 最近一次被访问的版本号", == cur 才算本组访问过
+int cur = 0;               //全局版本号, 每组数据(或每轮重新标记)前 ++cur
+int vis[N];                //vis[x] = x 最后一次被访问时的版本号
+void solve() {
+    cur++;
+    ...
+    if(vis[x] != cur) {    //x 在本组第一次出现
+        vis[x] = cur;      //打上本组标记
+        //在此做该位置的初始化
+    }
+}
+
+//时间戳惰性赋值: 等价于每组 memset(val, 0), 但只花实际用到位置的 O(1)
+if(vis[x] != cur) {
+    vis[x] = cur;
+    val[x] = 0;
+}
+
+//配套: 定长 vector 每组 resize 对齐即可, 不需 clear
+inf.resize(n);                  //长度与 n 对齐(旧值会被覆盖, 无需归零)
+pref.assign(n + 1, 0);          //前缀和等需要归零的用 assign
 
 //01背包
 for(int i = 1; i <= n; i++)
@@ -24,6 +217,113 @@ for(int i = 1; i <= n; i++)
 for(int i = 1; i <= n; i++)
     for(int j = w[i]; j <= m; j++)
             dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
+
+//多重背包: 每种物品有 s[i] 件
+//二进制拆分: s[i] 拆成 1, 2, 4, ..., 2^t, 余数 共 O(log s) 捆, 每捆当一件 01 背包物品
+//复杂度 O(n * m * log s); 数据大到拆分也过不了时再上单调队列优化(见 单调队列.cpp)
+vector< pair<int, int> > goods;          //(重量, 价值)
+for(int i = 1; i <= n; i++) {
+    int cnt = s[i], k = 1;
+    while(cnt >= k) {
+        goods.push_back({w[i] * k, v[i] * k});
+        cnt -= k;
+        k <<= 1;
+    }
+    if(cnt)    goods.push_back({w[i] * cnt, v[i] * cnt});
+}
+for(auto& g : goods)
+    for(int j = m; j >= g.first; j--)
+        dp[j] = max(dp[j], dp[j - g.first] + g.second);
+
+
+//区间DP: 按区间长度递增转移, dp[l][r] 由更短的区间合并而来
+//口诀: 长度在外层, 左端点中层, 断点内层
+//需预定义: int dp[N][N];
+
+for(int len = 2; len <= n; len++)                       //先枚举区间长度
+    for(int l = 1; l + len - 1 <= n; l++) {
+        int r = l + len - 1;
+        for(int k = l; k < r; k++)                      //枚举断点(最后一步合并处)
+            dp[l][r] = min(dp[l][r], dp[l][k] + dp[k + 1][r] + cost(l, k, r));
+    }
+//经典: 石子合并(cost = 区间和, 前缀和维护)、回文串构造、括号匹配
+//回文类区间 DP: 不用断点, 只由两端转移 dp[l][r] 与 dp[l+1][r], dp[l][r-1] 相关
+//初始化: len == 1 的 dp[l][l] 单独赋值(如 0), 其余 INF
+
+//数位DP: 统计 [0, n] 中满足数位条件的数的个数(含 0), 记忆化搜索框架
+//需预定义: int digit[20];  ll dp[20][MAXS];   (MAXS 按状态大小开)
+//用法: 区间 [L, R] 的答案 = count(R) - count(L - 1);  dp 只存 limit == false 的状态, 与 n 无关
+//注意: 每次 count() 前 memset(dp, -1, sizeof(dp)) 即可(状态与 n 无关)
+
+//示例状态: sum 为已填高位的数位和(改状态只需改 sum + i 与最后的判定)
+ll dfs(int pos, int sum, bool limit) {
+    if(pos == 0)    return sum == target;                 //填完, 判定状态是否合法
+    if(!limit && dp[pos][sum] != -1)    return dp[pos][sum];
+    int up = limit ? digit[pos] : 9;                      //贴上限则最高填 digit[pos]
+    ll res = 0;
+    for(int i = 0; i <= up; i++)
+        res += dfs(pos - 1, sum + i, limit && i == up);
+    if(!limit)    dp[pos][sum] = res;
+    return res;
+}
+
+ll count(ll n) {
+    int len = 0;
+    while(n) {
+        digit[++len] = n % 10;                            //digit[1] 为最低位
+        n /= 10;
+    }
+    memset(dp, -1, sizeof(dp));
+    return dfs(len, 0, true);
+}
+
+//常见状态: 是否含某数字(0/1)、各位和、%m 余数
+//注意: 若条件受前导零影响(如"不含数字 0"), 需加 lead 参数区分"还没开始填数",
+//      填 0 时若 lead 则不更新状态; 记忆化条件改为 !limit && !lead
+
+//状压DP: 状态用二进制表示集合, n 一般 <= 20
+//常用位运算:
+//  第 i 位: s >> i & 1;  置位: s | (1 << i);  清位: s & ~(1 << i)
+//  枚举 s 的所有非空子集: for(t = s; t; t = (t - 1) & s)   (3^n 个)
+//  全集: (1 << n) - 1;  补集: 全集 ^ s
+
+//示例: TSP 旅行商, dp[mask][i] = 经过 mask 中的点(含起点)且最后停在 i 的最短路径
+//需预定义: int d[N][N];  int dp[1 << 20][20];
+memset(dp, 0x3f, sizeof(dp));
+dp[1][0] = 0;                                            //从 0 出发, mask 只有点 0
+for(int mask = 1; mask < (1 << n); mask++)
+    for(int i = 0; i < n; i++)
+        if((mask >> i & 1) && dp[mask][i] != INF)
+            for(int j = 0; j < n; j++)
+                if(!(mask >> j & 1))
+                    dp[mask | (1 << j)][j] = min(dp[mask | (1 << j)][j], dp[mask][i] + d[i][j]);
+int ans = INF;
+for(int i = 0; i < n; i++)    ans = min(ans, dp[(1 << n) - 1][i] + d[i][0]);
+
+//子集 DP 框架: dp[mask] 由 dp[sub](sub 为 mask 的真子集) 转移
+//for(int mask = 0; mask < (1 << n); mask++)
+//    for(int sub = mask; sub; sub = (sub - 1) & mask)
+//        dp[mask] = min(dp[mask], dp[mask ^ sub] + cost(sub));
+
+//树形背包: 树上依赖选择, dp[u][j] = u 的子树中选 j 个且必选 u 的最大价值
+//依赖关系: 选子必选父; dp[u][0] = 0 表示空集
+//需预定义: int sz[N];  dp 初始全 0
+//j 从 1 开始并倒序 = 01 背包, 防止同一子树 v 被重复计入; 复杂度 O(n * m)
+
+void dfs(int u, int fa) {
+    sz[u] = 1;
+    dp[u][1] = w[u];                                     //只选 u
+    for(int v : graph[u]) {
+        if(v == fa)    continue;
+        dfs(v, u);
+        for(int j = sz[u]; j >= 1; j--)                  //已合并部分选 j 个(含 u)
+            for(int k = 1; k <= sz[v] && j + k <= m; k++)
+                dp[u][j + k] = max(dp[u][j + k], dp[u][j] + dp[v][k]);
+        sz[u] += sz[v];
+    }
+}
+//答案: dp[root][m](必须选满)或 max(dp[root][1..m])(至多)
+//变体: 边权版本把 w[u] 换成 w[边(u,fa)]; 无依赖版本(选子树任意点)才需要 j 从 0 开始
 
 //字符串处理
 string s, t;
@@ -89,7 +389,7 @@ void dijkstra(int s) {
     }
 }
 
-//spfa
+//spfa: 单源最短路 + 判负环 + 差分约束应用
 vector< pair<int, int> > graph[N];
 int dist[N], cnt[N];
 bool inq[N];
@@ -118,6 +418,14 @@ void spfa(int s) {
         }
     }
 }
+
+//差分约束: 求满足 x[i] - x[j] <= c 形式不等式组的一组最大解
+//建边: 对每条约束 x[i] - x[j] <= c, 加边 j -> i 权 c
+//再加超级源点 0 连所有点(权 0), 跑 spfa(0) 求最短路, dist[i] 即 x[i] 的最大可行解(可整体平移)
+//无解 <=> 存在负环(此时 spfa 判出负环)
+//求最小解: 约束 x[i] - x[j] >= c 加边 j -> i 权 -c(或建反向图跑最长路), 再整体取负
+//常用建模: x[i] <= x[j] + c 即 x[i] - x[j] <= c;  x[i] < x[j] 可化为 x[i] - x[j] <= c - 1(整数域)
+
 
 //拓扑排序
 vector<int> graph[N];
@@ -167,6 +475,34 @@ void bellmanford(int s) {
         if(dist[e.u] != INF && dist[e.v] > dist[e.u] + e.w)
             cout << "存在负环";
 }
+
+//并查集: 路径压缩 + 按大小合并, 近似 O(1)
+//需预定义: int fa[N], sz[N];  入口: init(n); find / unite / same
+void init(int n) {
+    for(int i = 1; i <= n; i++) {
+        fa[i] = i;
+        sz[i] = 1;
+    }
+}
+
+int find(int x) {
+    return fa[x] == x ? x : fa[x] = find(fa[x]);
+}
+
+void unite(int x, int y) {
+    int rx = find(x), ry = find(y);
+    if(rx == ry)    return;
+    if(sz[rx] < sz[ry])    swap(rx, ry);
+    fa[ry] = rx;
+    sz[rx] += sz[ry];
+}
+
+bool same(int x, int y) {
+    return find(x) == find(y);
+}
+
+//删边 -> 离线反向加边;  种类并查集(扩展域, 朋友敌人): 开 2n 个节点,
+//x 与 x+n 为两种对立身份, 朋友 unite(x,y)&unite(x+n,y+n), 敌人 unite(x,y+n)&unite(x+n,y)
 
 //kruskal
 struct edge {
@@ -250,8 +586,8 @@ void dfs2(int u, int fa) {
     }
 }
 
-//快速幂
-ll fastpow(ll a, ll n) {
+//快速幂: 求 a^n % MOD, O(log n)
+ll fastpow(ll a, ll n) {       //不带模版本(整数次幂, 注意会溢出)
     ll result = 1;
     ll base = a;
     while(n) {
@@ -262,6 +598,79 @@ ll fastpow(ll a, ll n) {
     }
     return result;
 }
+
+ll fastpow_mod(ll a, ll n) {   //带模版本(竞赛常用)
+    a %= MOD;                  //先取模防止溢出
+    ll result = 1;
+    while(n) {
+        if(n & 1)
+            result = result * a % MOD;
+        a = a * a % MOD;
+        n >>= 1;
+    }
+    return result;
+}
+
+//组合数: 预处理阶乘 + 逆元, O(1) 查询 C(n, k) % MOD (要求 MOD 为质数)
+//需预定义: ll fac[N], invfac[N];  入口: init(max_n) 一次, 之后 C(n, k) 直接查
+void init(int n) {
+    fac[0] = 1;
+    for(int i = 1; i <= n; i++)
+        fac[i] = fac[i - 1] * i % MOD;
+    invfac[n] = fastpow_mod(fac[n], MOD - 2);        //费马小定理求 n! 的逆元
+    for(int i = n - 1; i >= 0; i--)
+        invfac[i] = invfac[i + 1] * (i + 1) % MOD;   //O(n) 递推所有阶乘逆元
+}
+
+ll C(ll n, ll k) {
+    if(k < 0 || k > n)    return 0;
+    return fac[n] * invfac[k] % MOD * invfac[n - k] % MOD;
+}
+//常见模型: 卡特兰数 C(2n,n)/(n+1), 多重集排列 n!/(c1!c2!...), 隔板法 C(n+m-1, m-1)
+
+//卢卡斯定理: n, k 很大(可达 1e18)而 MOD 较小(质数, 一般 <= 1e6)时求 C(n, k) % MOD
+//C(n, k) % MOD = C(n/MOD, k/MOD) * C(n%MOD, k%MOD) % MOD
+//注意: 需先把 fac / invfac 预处理到 MOD - 1
+ll Lucas(ll n, ll k) {
+    if(k == 0)    return 1;
+    return C(n % MOD, k % MOD) * Lucas(n / MOD, k / MOD) % MOD;
+}
+//配套: MOD 较小且只查少量组合数时, 可用杨辉三角 O(n^2) 预处理所有 C[i][j], 不需要逆元
+
+//矩阵快速幂: 线性递推加速、图上走 k 步的路径数
+//需预定义: 矩阵大小 SZ;  调用: Matrix ans = mat_pow(base, n)
+#define SZ 2                            //矩阵大小, 按需修改
+
+struct Matrix {
+    ll a[SZ][SZ];
+    Matrix() {
+        memset(a, 0, sizeof(a));
+    }
+};
+
+Matrix mat_mul(Matrix x, Matrix y) {
+    Matrix res;
+    for(int i = 0; i < SZ; i++)
+        for(int k = 0; k < SZ; k++) {
+            if(x.a[i][k] == 0)    continue;
+            for(int j = 0; j < SZ; j++)
+                res.a[i][j] = (res.a[i][j] + x.a[i][k] * y.a[k][j]) % MOD;
+        }
+    return res;
+}
+
+Matrix mat_pow(Matrix base, ll n) {
+    Matrix res;
+    for(int i = 0; i < SZ; i++)
+        res.a[i][i] = 1;               //单位矩阵
+    while(n) {
+        if(n & 1)    res = mat_mul(res, base);
+        base = mat_mul(base, base);
+        n >>= 1;
+    }
+    return res;
+}
+//斐波那契: base.a[0][0]=base.a[0][1]=base.a[1][0]=1; ans=mat_pow(base,n); f[n]=ans.a[1][0];
 
 //马拉车
 string init(const string& s) {
@@ -292,6 +701,71 @@ int manacher(const string & s) {
     return res;
 }
 
+//Z函数: z[i] = s[0..] 与 s[i..] 的最长公共前缀长度, z[0] = 0, O(n)
+//需预定义: int z[N];
+void get_z(const string& s) {
+    int n = s.size();
+    int l = 0, r = 0;                    //维护最右匹配段 [l, r] = s[0..r-l]
+    for(int i = 1; i < n; i++) {
+        z[i] = (i <= r ? min(r - i + 1, z[i - l]) : 0);
+        while(i + z[i] < n && s[z[i]] == s[i + z[i]])    z[i]++;
+        if(i + z[i] - 1 > r) {
+            l = i;
+            r = i + z[i] - 1;
+        }
+    }
+}
+//匹配: t = p + '#' + s, 若 z[|p|+1+i] == |p| 则 p 在 s 的 i 处出现
+//周期: 若 i + z[i] == n, 则 n - i 是 s 的一个周期
+
+//字符串哈希: 判断子串相等 / 二分求 LCP / 比较字典序, 双哈希防冲突
+//需预定义: ll h1[N], h2[N], p1[N], p2[N];  入口: init(s); s 下标从 1 开始
+const int BASE = 131;
+const int MOD1 = 1000000007, MOD2 = 1000000009;
+
+void init(const string& s) {
+    int n = s.size() - 1;                //s 有效下标 1..n
+    p1[0] = p2[0] = 1;
+    for(int i = 1; i <= n; i++) {
+        p1[i] = p1[i - 1] * BASE % MOD1;
+        p2[i] = p2[i - 1] * BASE % MOD2;
+        h1[i] = (h1[i - 1] * BASE + s[i]) % MOD1;
+        h2[i] = (h2[i - 1] * BASE + s[i]) % MOD2;
+    }
+}
+
+ll get_h1(int l, int r) {                //子串 [l, r] 在 mod1 下的哈希
+    return ((h1[r] - h1[l - 1] * p1[r - l + 1]) % MOD1 + MOD1) % MOD1;
+}
+ll get_h2(int l, int r) {
+    return ((h2[r] - h2[l - 1] * p2[r - l + 1]) % MOD2 + MOD2) % MOD2;
+}
+bool equal(int l1, int r1, int l2, int r2) {    //O(1) 判断两子串相等
+    return get_h1(l1, r1) == get_h1(l2, r2) && get_h2(l1, r1) == get_h2(l2, r2);
+}
+//二分求 LCP: 见 步长二分/二分答案 的 while(l <= r) 套路, mid 用 equal(a, a+mid-1, b, b+mid-1)
+//回文子串: 正反串各建哈希, [l,r] 回文 <=> 正串 hash(l,r) == 反串 hash(n-r+1, n-l+1)
+
+//最小表示法: 循环同构串中字典序最小的表示, O(n)
+//返回最小表示起始下标(0-based), 例: "bcab" 的最小表示是 "abbc", 返回 2
+int min_representation(const string& s) {
+    int n = s.size();
+    int i = 0, j = 1, k = 0;             //i, j 两个候选起点, k 为当前比较长度
+    while(i < n && j < n && k < n) {
+        char a = s[(i + k) % n], b = s[(j + k) % n];
+        if(a == b)    k++;
+        else {
+            if(a > b)    i += k + 1;      //i 开头的串在 k 处更大, i 及其后 k 个都不可能是答案
+            else    j += k + 1;
+            if(i == j)    j++;
+            k = 0;
+        }
+    }
+    return min(i, j);
+}
+//判断两个循环串是否同构: 各取最小表示比较是否相等
+//最大表示: 把 a > b 改为 a < b
+
 //欧拉筛
 vector<int> euler_sieve(int n) {
     vector<bool> is_prime(n + 1, true);
@@ -308,6 +782,44 @@ vector<int> euler_sieve(int n) {
     }
     return primes;
 }
+
+//线性筛同时求积性函数: phi / mu / 约数个数 d / 约数和 sigma, O(n)
+//需预定义: vector<int> primes;  bool is_comp[N];  int phi[N], mu[N], cnt_min[N];  ll d[N], sigma[N];
+void sieve(int n) {
+    phi[1] = 1;
+    mu[1] = 1;
+    d[1] = 1;
+    sigma[1] = 1;
+    for(int i = 2; i <= n; i++) {
+        if(!is_comp[i]) {
+            primes.push_back(i);
+            phi[i] = i - 1;
+            mu[i] = -1;
+            cnt_min[i] = 1;
+            d[i] = 2;
+            sigma[i] = i + 1;
+        }
+        for(int p : primes) {
+            if(1LL * i * p > n)    break;
+            is_comp[i * p] = true;
+            if(i % p == 0) {
+                //p 是 i 的最小质因子
+                phi[i * p] = phi[i] * p;
+                mu[i * p] = 0;                                     //含平方因子
+                cnt_min[i * p] = cnt_min[i] + 1;
+                d[i * p] = d[i] / (cnt_min[i] + 1) * (cnt_min[i] + 2);
+                sigma[i * p] = sigma[i] + p * (sigma[i] - sigma[i / p]);
+                break;                                             //保证每个合数只筛一次
+            }
+            phi[i * p] = phi[i] * (p - 1);
+            mu[i * p] = -mu[i];
+            cnt_min[i * p] = 1;
+            d[i * p] = d[i] * 2;
+            sigma[i * p] = sigma[i] * (p + 1);
+        }
+    }
+}
+//sum_{d|n} phi(d) = n (欧拉反演);   sum_{d|n} mu(d) = [n==1]
 
 //树的直径
 //法一: 树上dp
@@ -351,6 +863,199 @@ int get_diameter() {
     return dis[far];
 }
 
+//LCA 最近公共祖先(倍增) + 树上差分
+//需预定义: vector< pair<int, int> > graph[N];  int depth[N], fa[LOG][N];  ll dist[N];
+//入口: dfs(root, 0); get_lca(u, v)
+#define LOG 20                    //需满足 2^LOG > n
+
+void dfs(int u, int par) {
+    fa[0][u] = par;
+    for(int k = 1; k < LOG; k++)
+        fa[k][u] = fa[k - 1][fa[k - 1][u]];
+    for(auto& e : graph[u]) {
+        int w = e.first, v = e.second;
+        if(v == par)    continue;
+        depth[v] = depth[u] + 1;
+        dist[v] = dist[u] + w;
+        dfs(v, u);
+    }
+}
+
+int get_lca(int u, int v) {
+    if(depth[u] < depth[v])    swap(u, v);
+    int diff = depth[u] - depth[v];
+    for(int k = 0; k < LOG; k++)
+        if(diff >> k & 1)    u = fa[k][u];       //抬到同一深度
+    if(u == v)    return u;
+    for(int k = LOG - 1; k >= 0; k--)
+        if(fa[k][u] != fa[k][v]) {               //一起往上跳, 跳到 lca 的儿子
+            u = fa[k][u];
+            v = fa[k][v];
+        }
+    return fa[0][u];
+}
+//两点距离 = dist[u] + dist[v] - 2 * dist[lca(u, v)]
+//树上差分: "u 到 v 路径整体 +x, 最后问每个点/边的值", 需预定义 ll dif[N];
+//点差分: dif[u]+=x; dif[v]+=x; dif[lca]-=x; dif[fa[0][lca]]-=x;
+//边差分: dif[u]+=x; dif[v]+=x; dif[lca]-=2x;   (dif[u] 表示 u 到父节点的边)
+//最后自底向上 dif[fa[u]] += dif[u](按深度从深到浅遍历)
+
+//树链剖分(重链剖分): 树上路径修改/查询转成 O(log n) 段连续的 dfn 区间, 线段树维护
+//需预定义: vector<int> graph[N];  int sz[N], dep[N], fa[N], son[N];  int top[N], dfn[N], rnk[N];
+//入口: dfs1(root, 0); dfs2(root, root);  之后树上路径 = 若干段 [dfn[top], dfn[u]]
+
+void dfs1(int u, int par) {              //第一遍: 求 sz / dep / fa / son(重儿子)
+    sz[u] = 1;
+    dep[u] = dep[par] + 1;
+    fa[u] = par;
+    for(int v : graph[u]) {
+        if(v == par)    continue;
+        dfs1(v, u);
+        sz[u] += sz[v];
+        if(sz[v] > sz[son[u]])    son[u] = v;
+    }
+}
+
+void dfs2(int u, int tp) {               //第二遍: 求 top / dfn, 先走重儿子保证重链 dfn 连续
+    top[u] = tp;
+    dfn[u] = ++dfn_cnt;
+    rnk[dfn[u]] = u;
+    if(son[u])    dfs2(son[u], tp);
+    for(int v : graph[u])
+        if(v != fa[u] && v != son[u])    dfs2(v, v);
+}
+
+void path_update(int u, int v, int val) {   //u-v 路径上的点权 +val
+    while(top[u] != top[v]) {
+        if(dep[top[u]] < dep[top[v]])    swap(u, v);
+        seg_update(1, 1, n, dfn[top[u]], dfn[u], val);   //整段重链
+        u = fa[top[u]];                  //跳到链顶的父亲
+    }
+    if(dep[u] > dep[v])    swap(u, v);
+    seg_update(1, 1, n, dfn[u], dfn[v], val);
+}
+
+ll path_query(int u, int v) {              //u-v 路径上的点权和, 结构与上面相同
+    ll res = 0;
+    while(top[u] != top[v]) {
+        if(dep[top[u]] < dep[top[v]])    swap(u, v);
+        res += seg_query(1, 1, n, dfn[top[u]], dfn[u]);
+        u = fa[top[u]];
+    }
+    if(dep[u] > dep[v])    swap(u, v);
+    return res + seg_query(1, 1, n, dfn[u], dfn[v]);
+}
+//配套: 边权版本: 把边权下放为"儿子点权"(dfn 时赋值), 路径操作最后 LCA 处跳过
+//      子树操作: 子树 u 对应 dfn 区间 [dfn[u], dfn[u] + sz[u] - 1]
+//      线段树数组按 dfn 建树: build 时 a_seg[dfn[i]] = w[i]
+
+//DSU on tree(树上启发式合并): 对每个节点求"子树内"的统计信息(颜色数等), O(n log n)
+//核心: 重儿子的贡献算完保留, 轻儿子子树暴力加一遍; 每个点作为轻子树成员被重算 O(log n) 次
+//需预定义: vector<int> graph[N];  int sz[N], son[N];  bool skip[N];  颜色 color[N];
+//         int cnt[C];  int distinct;   (以"子树内不同颜色数"为例的统计)
+
+void dfs1(int u, int par) {              //第一遍: 求 sz 与重儿子 son
+    sz[u] = 1;
+    for(int v : graph[u]) {
+        if(v == par)    continue;
+        dfs1(v, u);
+        sz[u] += sz[v];
+        if(sz[v] > sz[son[u]])    son[u] = v;
+    }
+}
+
+void add_subtree(int u, int par, int val) {   //把 u 子树所有点的颜色按 val(+1 加入 / -1 删除)计入
+    if(cnt[color[u]] == 0)    distinct++;     //(统计量换成别的就改这两处, 如求和 distinct += color[u] * val)
+    cnt[color[u]] += val;
+    if(cnt[color[u]] == 0)    distinct--;
+    for(int v : graph[u])
+        if(v != par && !skip[v])    add_subtree(v, u, val);
+}
+
+void dfs2(int u, int par, bool keep) {
+    for(int v : graph[u])                    //先算所有轻儿子, 算完清空贡献
+        if(v != par && v != son[u])    dfs2(v, u, false);
+    if(son[u]) {
+        dfs2(son[u], u, true);               //重儿子贡献保留
+        skip[son[u]] = true;                 //下面 add_subtree 时跳过它
+    }
+    add_subtree(u, par, 1);                  //暴力加入 u 本身与所有轻儿子子树
+    skip[son[u]] = false;
+    ans[u] = distinct;                       //此时统计的是 u 的整棵子树
+    if(!keep)    add_subtree(u, par, -1);    //不留贡献则整体清空
+}
+//典型: 子树内不同颜色数; 离线回答子树询问(按 dfn 变成区间问题则用莫队/主席树)
+
+//点分治: 统计树上路径信息(长度为 k 的路径条数等), O(n log n)
+//核心: 每次取重心, 统计"经过重心"的路径, 再递归到各连通块
+//需预定义: vector< pair<int, int> > graph[N];  bool vis[N];  int sz[N];
+
+void get_sz(int u, int par) {            //求子树大小(在去掉已处理重心后的连通块内)
+    sz[u] = 1;
+    for(auto& e : graph[u]) {
+        int v = e.second;
+        if(v == par || vis[v])    continue;
+        get_sz(v, u);
+        sz[u] += sz[v];
+    }
+}
+
+int get_centroid(int u, int par, int total) {   //找重心: 最大子树 <= total/2
+    for(auto& e : graph[u]) {
+        int v = e.second;
+        if(v == par || vis[v])    continue;
+        if(sz[v] > total / 2)    return get_centroid(v, u, total);
+    }
+    return u;
+}
+
+void dfs_dist(int u, int par, int d) {   //收集 u 连通块内所有点到重心的距离
+    dists.push_back(d);
+    for(auto& e : graph[u]) {
+        int v = e.second;
+        if(v == par || vis[v])    continue;
+        dfs_dist(v, u, d + e.first);
+    }
+}
+
+void solve(int u) {
+    get_sz(u, 0);
+    int c = get_centroid(u, 0, sz[u]);
+    vis[c] = true;
+    //--- 统计经过重心 c 的路径 ---
+    //维护全局桶 mp: 之前处理过的子树中"距 c 为 d"的点数
+    //对每个子树: 先查(与桶中配对)再加(放入桶), 避免同一子树内部错误配对
+    //例: 距离 == k 的路径数: 对 dists 中每个 d 查 mp[k - d]
+    //--- 递归处理剩余连通块 ---
+    for(auto& e : graph[c]) {
+        int v = e.second;
+        if(!vis[v])    solve(v);
+    }
+}
+//配套: 树上路径统计先想点分治/树剖/倍增; 点分治配合桶, 计数类注意"先查后加"防同子树
+
+//带权并查集: 维护节点与父节点的"关系值"(模 k), 食物链 / 种类关系类问题
+//语义: d[x] = (type[x] - type[fa[x]]) mod k, 即 x 相对其父亲的关系
+//需预定义: int fa[N], d[N];  关系种类数 k(食物链 k = 3: 同类/吃/被吃)
+
+int find(int x) {
+    if(fa[x] == x)    return x;
+    int root = find(fa[x]);
+    d[x] = (d[x] + d[fa[x]]) % k;    //此时 d[fa[x]] 已压缩为 fa[x] 到 root 的关系, 先加再改父亲
+    return fa[x] = root;
+}
+
+//声明"x 与 y 的关系为 rel"(type[x] - type[y] ≡ rel), 返回 false 表示与已有关系矛盾
+bool unite(int x, int y, int rel) {
+    int rx = find(x), ry = find(y);
+    if(rx == ry)    return ((d[x] - d[y]) % k + k) % k == rel;   //同一集合直接验证
+    fa[rx] = ry;
+    d[rx] = ((rel - d[x] + d[y]) % k + k) % k;                  //type[rx]-type[ry] = rel-d[x]+d[y]
+    return true;
+}
+//初始化: fa[i] = i, d[i] = 0;  查询任意两点的关系: find 后 (d[x] - d[y] + k) % k
+//配套: 食物链建模: rel=0 同类, rel=1 x 吃 y; 新说法冲突即假话计数
+
 //树上最大独立集
 //从树上选取若干个互不相邻的结点, 求它们的最大权值和
 void dfs(int u, int fa) {
@@ -365,7 +1070,133 @@ void dfs(int u, int fa) {
     }
 }
 
-//线段树
+//Tarjan 算法: 强连通分量(SCC) / 割点 / 桥, 一次 dfs 求 dfn 与 low
+//需预定义: int dfn[N], low[N], dfn_cnt;   (多组数据时 dfn 需清零, 或改时间戳)
+//注意: n 极大时递归可能爆栈, 可在 main 里扩栈或用迭代写法
+
+//-------------- 有向图强连通分量 SCC(缩点) --------------
+//同一 SCC 内互相可达; 缩点后为 DAG, 常配合拓扑排序做 DP
+//需预定义: vector<int> graph[N];  int scc[N], scc_cnt;  int stk[N], top;  bool in_stk[N];
+
+void tarjan_scc(int u) {
+    dfn[u] = low[u] = ++dfn_cnt;
+    stk[++top] = u;
+    in_stk[u] = true;
+    for(int v : graph[u]) {
+        if(!dfn[v]) {
+            tarjan_scc(v);
+            low[u] = min(low[u], low[v]);
+        }
+        else if(in_stk[v])    low[u] = min(low[u], dfn[v]);
+    }
+    if(dfn[u] == low[u]) {                 //u 是分量根, 弹栈收分量
+        scc_cnt++;
+        int x;
+        do {
+            x = stk[top--];
+            in_stk[x] = false;
+            scc[x] = scc_cnt;
+        } while(x != u);
+    }
+}
+//调用: for(int i = 1; i <= n; i++) if(!dfn[i]) tarjan_scc(i);
+
+//-------------- 无向图割点 --------------
+//去掉 u 后连通块数增加; 根的特判: 子树个数 > 1
+//需预定义: bool is_cut[N];
+void tarjan_cut(int u, int fa) {
+    dfn[u] = low[u] = ++dfn_cnt;
+    int child = 0;
+    for(int v : graph[u]) {
+        if(v == fa)    continue;           //有重边时需按边编号判, 见桥的写法
+        if(!dfn[v]) {
+            tarjan_cut(v, u);
+            low[u] = min(low[u], low[v]);
+            if(low[v] >= dfn[u] && fa != -1)    is_cut[u] = true;
+            child++;
+        }
+        else    low[u] = min(low[u], dfn[v]);
+    }
+    if(fa == -1 && child > 1)    is_cut[u] = true;
+}
+
+//-------------- 无向图桥 --------------
+//删掉边 (u, v) 后图不连通; low[v] > dfn[u] 时 (u, v) 是桥
+//用链式前向星按边编号判重边: 见 Dinic.cpp 的前向星存法
+//需预定义: bool is_bridge[M];
+//调用: for(int i = 1; i <= n; i++) if(!dfn[i]) tarjan_bridge(i, -1);
+void tarjan_bridge(int u, int from_edge) {
+    dfn[u] = low[u] = ++dfn_cnt;
+    for(int i = head[u]; i; i = e[i].next) {
+        if(i == (from_edge ^ 1))    continue;    //前向星反向边, 正确处理重边
+        int v = e[i].to;
+        if(!dfn[v]) {
+            tarjan_bridge(v, i);
+            low[u] = min(low[u], low[v]);
+            if(low[v] > dfn[u])    is_bridge[i] = is_bridge[i ^ 1] = true;
+        }
+        else    low[u] = min(low[u], dfn[v]);
+    }
+}
+
+//2-SAT 完整版(SCC 判定 + 构造可行解)
+//节点编号: x 真 = 2x, x 假 = 2x+1, 取反 = 节点 ^ 1(必须成对 2x/2x+1, ^1 才是取反!)
+//需预定义: 前向星或 vector 存图(节点 2..2n+1, 数组大小 2n+2), 使用上面的 tarjan_scc 缩点
+int node(int x, int v) {
+    return 2 * x + (v ? 0 : 1);          //x 取 v 对应的节点(v 为 1 真 0 假)
+}
+void add_clause(int a, int va, int b, int vb) {   //"(a == va) 或 (b == vb)"
+    int A = node(a, va), B = node(b, vb);
+    add_edge(A ^ 1, B);                  //¬A -> B
+    add_edge(B ^ 1, A);                  //¬B -> A
+}
+//判定: 存在 i 使 scc[2i] == scc[2i+1] 则无解;  调用: for i = 2..2n+1 if(!dfn[i]) tarjan_scc(i)
+//赋值: value[i] = (scc[2i] < scc[2i+1]);  编号小的 SCC 拓扑序靠后, 取靠前(编号小)的为真
+//单变量强制赋值: 强制 x 真 = add_clause(x, 1, x, 1)
+//配套: 变量数 <= 1e6 时注意图大小为 2n + 2
+
+
+//二分图: 染色判定 + 最大匹配(匈牙利), 需预定义: int color[N](初始-1), match[N];  bool vis[N];
+bool dfs_color(int u, int c) {
+    color[u] = c;
+    for(int v : graph[u]) {
+        if(color[v] == -1) {
+            if(!dfs_color(v, c ^ 1))    return false;
+        }
+        else if(color[v] == c)    return false;
+    }
+    return true;
+}
+//调用: memset(color, -1, sizeof(color)); 对每个未染色点 dfs_color(i, 0)
+
+//匈牙利: 左部 n 个点右部 m 个点, graph 只存左部->右部, O(nm)
+bool dfs_match(int u) {
+    for(int v : graph[u]) {
+        if(vis[v])    continue;
+        vis[v] = true;
+        if(match[v] == 0 || dfs_match(match[v])) {
+            match[v] = u;
+            return true;
+        }
+    }
+    return false;
+}
+int hungarian() {
+    memset(match, 0, sizeof(match));
+    int ans = 0;
+    for(int i = 1; i <= n; i++) {
+        memset(vis, 0, sizeof(vis));
+        if(dfs_match(i))    ans++;
+    }
+    return ans;
+}
+//最大匹配数 = 最小点覆盖; 最大独立集 = 总点数 - 最小点覆盖; DAG最小路径覆盖 = n - 最大匹配
+
+//线段树: 区间加+求和(基础) / 区间赋值+区间加+求和(双lazy) / 线段树二分
+//需预定义: int sum[4 * N], lazy[4 * N];  a[] 为原数组
+//区间加 + 区间求和, build(1, 1, n) 入口
+//注意: 多组数据时每组 build 前需 memset(lazy, 0, sizeof(lazy))
+
 void build(int p, int l, int r) {
     if(l == r) {
         sum[p] = a[l];
@@ -410,10 +1241,179 @@ int query(int p, int l, int r, int ql, int qr) {
     if(qr > mid)    res += query(2 * p + 1, mid + 1, r, ql, qr);
     return res;
 }
+//---------------- 进阶: 区间赋值 + 区间加 + 区间求和(双懒标记) ----------------
+//需预定义: ll sum2[4 * N], addlz[4 * N];  ll setlz[4 * N];  setlz 用 -1 表示"无赋值标记"
+//约定: 赋值标记优先于加标记(打赋值标记时清空加标记); 入口 build2(1, 1, n), 其余同理
+
+void build2(int p, int l, int r) {
+    setlz[p] = -1;
+    addlz[p] = 0;
+    if(l == r) {
+        sum2[p] = a[l];
+        return;
+    }
+    int mid = (l + r) >> 1;
+    build2(2 * p, l, mid);
+    build2(2 * p + 1, mid + 1, r);
+    sum2[p] = sum2[2 * p] + sum2[2 * p + 1];
+}
+
+void push_down2(int p, int l, int r) {
+    int mid = (l + r) >> 1;
+    if(setlz[p] != -1) {
+        setlz[2 * p] = setlz[2 * p + 1] = setlz[p];
+        addlz[2 * p] = addlz[2 * p + 1] = 0;
+        sum2[2 * p] = setlz[p] * (mid - l + 1);
+        sum2[2 * p + 1] = setlz[p] * (r - mid);
+        setlz[p] = -1;
+    }
+    if(addlz[p]) {
+        addlz[2 * p] += addlz[p];
+        sum2[2 * p] += addlz[p] * (mid - l + 1);
+        addlz[2 * p + 1] += addlz[p];
+        sum2[2 * p + 1] += addlz[p] * (r - mid);
+        addlz[p] = 0;
+    }
+}
+
+void set2(int p, int l, int r, int ql, int qr, ll val) {   //区间赋值
+    if(ql <= l && r <= qr) {
+        setlz[p] = val;
+        addlz[p] = 0;
+        sum2[p] = val * (r - l + 1);
+        return;
+    }
+    push_down2(p, l, r);
+    int mid = (l + r) >> 1;
+    if(ql <= mid)    set2(2 * p, l, mid, ql, qr, val);
+    if(qr > mid)     set2(2 * p + 1, mid + 1, r, ql, qr, val);
+    sum2[p] = sum2[2 * p] + sum2[2 * p + 1];
+}
+
+void add2(int p, int l, int r, int ql, int qr, ll val) {   //区间加
+    if(ql <= l && r <= qr) {
+        addlz[p] += val;
+        sum2[p] += val * (r - l + 1);
+        return;
+    }
+    push_down2(p, l, r);
+    int mid = (l + r) >> 1;
+    if(ql <= mid)    add2(2 * p, l, mid, ql, qr, val);
+    if(qr > mid)     add2(2 * p + 1, mid + 1, r, ql, qr, val);
+    sum2[p] = sum2[2 * p] + sum2[2 * p + 1];
+}
+
+ll query2(int p, int l, int r, int ql, int qr) {
+    if(ql <= l && r <= qr)    return sum2[p];
+    push_down2(p, l, r);
+    int mid = (l + r) >> 1;
+    ll res = 0;
+    if(ql <= mid)    res += query2(2 * p, l, mid, ql, qr);
+    if(qr > mid)     res += query2(2 * p + 1, mid + 1, r, ql, qr);
+    return res;
+}
+
+//---------------- 线段树二分: 在整棵树上找第一个满足前缀条件的位置 ----------------
+//例: 权值线段树求第 k 小(第 k 个 1); 不按区间拆, 直接在树上走
+//int seg_kth(int p, int l, int r, int k) {
+//    if(l == r)    return l;
+//    int mid = (l + r) >> 1;
+//    if(sum[2 * p] >= k)    return seg_kth(2 * p, l, mid, k);   //左子树够 k 个走左
+//    return seg_kth(2 * p + 1, mid + 1, r, k - sum[2 * p]);     //否则去右, k 减去左子树个数
+//}
+//注意: 有懒标记时二分前要 push_down; 找"最靠左的 >= x 的位置"同理改判定条件
+
+
+//ST表: 静态区间最值 RMQ, O(n log n) 预处理 O(1) 查询, 不支持修改
+//需预定义: int st[LOG][N]; 入口: init(); query(l, r); 下标从 1 开始
+#define LOG 20                  //需满足 2^LOG >= n
+
+void init() {
+    for(int i = 1; i <= n; i++)
+        st[0][i] = a[i];
+    for(int k = 1; (1 << k) <= n; k++)
+        for(int i = 1; i + (1 << k) - 1 <= n; i++)
+            st[k][i] = max(st[k - 1][i], st[k - 1][i + (1 << (k - 1))]);
+}
+
+int query(int l, int r) {
+    int k = 31 - __builtin_clz(r - l + 1);   //log2(len) 向下取整; ll 用 63 - __builtin_clzll
+    return max(st[k][l], st[k][r - (1 << k) + 1]);
+}
+//最小值: max 改 min;  也可存 gcd / 最大最小值差(重载合并)
+
+//单调栈: 每个元素左右第一个更大/更小的位置, O(n)
+//需预定义: int stk[N], top = 0;  a[1..n]
+//右侧第一个比 a[i] 大的位置(不存在记 n+1): 维护栈内单调递减(存下标)
+void get_nxt_bigger() {
+    top = 0;
+    for(int i = 1; i <= n; i++) {
+        while(top && a[stk[top]] < a[i]) {
+            nxt_bigger[stk[top]] = i;
+            top--;
+        }
+        stk[++top] = i;
+    }
+    while(top) {                            //栈内剩余元素右侧没有更大的
+        nxt_bigger[stk[top]] = n + 1;
+        top--;
+    }
+}
+//右侧第一个更小: < 改 >;  左侧第一个更大/更小: 倒着扫一遍
+//贡献法: a[i] 作为区间最小值的子区间个数 = (i - L[i]) * (R[i] - i),
+//L = 左侧第一个 < a[i](严格), R = 右侧第一个 <= a[i](非严格), 一边严格一边非严格防重复计数
+
+//单调队列: 滑动窗口最值, O(n), deque 存下标, 队首即窗口最小值
+//输出每个长度为 k 的窗口的最小值(按窗口左端点顺序)
+void window_min(int k) {
+    deque<int> dq;
+    for(int i = 1; i <= n; i++) {
+        while(!dq.empty() && dq.front() < i - k + 1)    dq.pop_front();  //踢掉滑出窗口的
+        while(!dq.empty() && a[dq.back()] >= a[i])      dq.pop_back();   //保持队内递增
+        dq.push_back(i);
+        if(i >= k)    cout << a[dq.front()] << ' ';                      //窗口 [i-k+1, i] 的最小值
+    }
+}
+//最大值: >= 改 <= (保持队内递减)
+
+//离散化: 大范围值压缩到 [1, m] 保序, 用于值当数组下标
+//需预定义: vector<int> a(原始数组), xs(备份数组)
+void discrete() {
+    xs = a;                              //或把"所有要离散化的值"都 push_back 进 xs
+    sort(xs.begin(), xs.end());
+    xs.erase(unique(xs.begin(), xs.end()), xs.end());
+}
+int id(int x) {                          //x 离散化后的编号(1-based)
+    return lower_bound(xs.begin(), xs.end(), x) - xs.begin() + 1;
+}
+//还原: 原值 = xs[id - 1]
+
+//二维前缀和: 需预定义 ll pre[N][N];
+void build_pre() {
+    for(int i = 1; i <= n; i++)
+        for(int j = 1; j <= m; j++)
+            pre[i][j] = pre[i - 1][j] + pre[i][j - 1] - pre[i - 1][j - 1] + a[i][j];
+}
+//子矩阵和 (x1,y1)-(x2,y2): pre[x2][y2] - pre[x1-1][y2] - pre[x2][y1-1] + pre[x1-1][y1-1]
+
+//二维差分: 子矩阵整体 +val, 需预定义 ll dif[N][N];
+void add(int x1, int y1, int x2, int y2, int val) {
+    dif[x1][y1] += val;
+    dif[x2 + 1][y1] -= val;
+    dif[x1][y2 + 1] -= val;
+    dif[x2 + 1][y2 + 1] += val;
+}
+void build_dif() {                       //还原: 对 dif 本身做一次二维前缀和
+    for(int i = 1; i <= n; i++)
+        for(int j = 1; j <= m; j++)
+            dif[i][j] += dif[i - 1][j] + dif[i][j - 1] - dif[i - 1][j - 1];
+}
+//一维差分: dif[l] += v; dif[r+1] -= v;
 
 //最大公约数
 int gcd(int a, int b) {
-    return b == 0 ? a : gcd(b, a % b);  //需要确保第一个参数大于等于第二个参数
+    return b == 0 ? a : gcd(b, a % b);  //欧几里得算法, 对任意 a, b 都正确, 不要求 a >= b
+    //竞赛直接可用 C++17 的 std::gcd (头文件 <numeric>)
 }
 
 //KMP
@@ -527,14 +1527,14 @@ bool contain(const string& text) {
     return false;
 }
 
-//树状数组
+//树状数组: 单点改区间查 / 权值 BIT 求第 k 小
 int lowbit(int x) {
     return x & (-x);
 }
 
 void add(int idx, int delta) {  //也可用于预处理
     for(int i = idx; i <= n; i += lowbit(i))    tree[i] += delta;
-}
+}   
 
 ll presum(int pos) {
     ll res = 0;
@@ -544,6 +1544,173 @@ ll presum(int pos) {
 ll query(int l, int r) {
     return presum(r) - presum(l - 1);
 }
+
+//权值树状数组求第 k 小: tree 中存的是"个数"(每个位置 0/1 或计数), 返回第 k 个 1 的位置
+//需满足 tree 的"前缀和"单调(即每个位置非负)
+//需预定义: #define LOG 20   (2^LOG >= n, 从 LOG 往下跳)
+int kth(int k) {
+    int pos = 0;
+    for(int i = LOG; i >= 0; i--) {
+        int nxt = pos + (1 << i);
+        if(nxt <= n && tree[nxt] < k) {
+            k -= tree[nxt];
+            pos = nxt;
+        }
+    }
+    return pos + 1;                      //tree[pos+1] 贡献了第 k 个 1
+}
+
+
+//莫队: 离线处理区间查询, 左右指针共移动 O(n * sqrt(q)) 次
+//适用: 答案能从相邻区间 O(1) 增删维护(区间不同颜色数等), 且无修改
+//需预定义: struct Query { int l, r, id; } q[M];  int block, cur_l, cur_r;  ll cur_ans;
+//         void add(int pos);  void del(int pos);   (维护 cur_ans, 按题目实现)
+//入口: block = sqrt(n); sort(q + 1, q + m + 1, cmp); mo();
+
+bool cmp(Query x, Query y) {
+    if(x.l / block != y.l / block)    return x.l < y.l;
+    return (x.l / block) & 1 ? x.r > y.r : x.r < y.r;   //奇偶排序: 偶数块 r 增, 奇数块 r 减
+}
+
+void mo() {
+    sort(q + 1, q + m + 1, cmp);
+    cur_l = 1;
+    cur_r = 0;                           //初始空区间
+    cur_ans = 0;
+    for(int i = 1; i <= m; i++) {
+        while(cur_l > q[i].l)    add(--cur_l);    //先扩再缩, 保证指针不交叉
+        while(cur_r < q[i].r)    add(++cur_r);
+        while(cur_l < q[i].l)    del(cur_l++);
+        while(cur_r > q[i].r)    del(cur_r--);
+        ans[q[i].id] = cur_ans;
+    }
+}
+//带修改莫队: 加时间维, 块大小取 n^(2/3); 树上莫队: 欧拉序转括号序列
+
+//逆序对: i < j 且 a[i] > a[j] 的对数, BIT + 离散化 O(n log n)
+//需预定义: 树状数组(见 树状数组.cpp): int tree[N];  add / presum;  原数组 a[1..n](值可重复)
+
+ll count_inversion() {
+    vector<int> xs(a + 1, a + n + 1);
+    sort(xs.begin(), xs.end());
+    xs.erase(unique(xs.begin(), xs.end()), xs.end());
+    memset(tree, 0, sizeof(tree));                       //多组数据时见 多组数据与时间戳.cpp
+    ll ans = 0;
+    for(int i = 1; i <= n; i++) {
+        int rank = lower_bound(xs.begin(), xs.end(), a[i]) - xs.begin() + 1;
+        ans += (i - 1) - presum(rank);                   //已插入中比 a[i] 大的个数
+        add(rank, 1);
+    }
+    return ans;
+}
+//配套模型: 相邻交换排序最少次数 = 逆序对数; 二维偏序计数同理(按一维排序, 另一维 BIT)
+//         严格大于改成 >= : presum(rank - 1) 处统计即可
+
+//扫描线 + 线段树: 矩形面积并/周长并
+//思想: 每个矩形拆成上下两条水平边, 按 y 排序扫描; 线段树维护当前被覆盖的 x 轴总长度
+//需预定义: int cnt[4 * N], len[4 * N];  离散化后的竖线坐标 xs[1..m]
+//叶子 [i, i] 代表 x 区间 [xs[i], xs[i+1]), 故线段树叶子只建到 m-1
+
+struct Line {
+    int y, x1, x2, tag;                  //tag = 1 为下边(进入), -1 为上边(离开)
+};
+bool cmp_line(Line p, Line q) {
+    return p.y < q.y;
+}
+
+//len[p] = 节点区间内被覆盖的实际 x 长度(用 xs 换算), cnt[p] = 被完全覆盖的次数
+void update(int p, int l, int r, int ql, int qr, int val) {
+    if(ql <= l && r <= qr) {
+        cnt[p] += val;                   //注意这里不做下传, len 直接在回溯时重算
+    }
+    else {
+        int mid = (l + r) >> 1;
+        if(ql <= mid)    update(2 * p, l, mid, ql, qr, val);
+        if(qr > mid)     update(2 * p + 1, mid + 1, r, ql, qr, val);
+    }
+    if(cnt[p])    len[p] = xs[r + 1] - xs[l];            //整段被覆盖, 取实际长度
+    else    len[p] = (l == r ? 0 : len[2 * p] + len[2 * p + 1]);
+}
+
+//预处理: 把每个矩形的 x1, x2 离散化到 xs[1..m]; 每条水平边转成 Line(离散化后的 x1, x2 下标)
+ll area(vector<Line>& lines) {
+    sort(lines.begin(), lines.end(), cmp_line);
+    memset(cnt, 0, sizeof(cnt));
+    memset(len, 0, sizeof(len));
+    ll ans = 0;
+    for(int i = 0; i + 1 < (int)lines.size(); i++) {
+        update(1, 1, m - 1, lines[i].x1, lines[i].x2 - 1, lines[i].tag);
+        ans += 1LL * len[1] * (lines[i + 1].y - lines[i].y);
+    }
+    return ans;
+}
+//周长并: 横边 = 每步 len[1] 的变化量(前后差绝对值), 竖边 = 2 * (相邻 y 差) * 当前不相交段数
+//        维护"覆盖段数 num"与左右端是否覆盖, 竖边 = 2 * num * dy
+
+//主席树(可持久化权值线段树): 静态区间第 k 小 / 区间内某值的个数
+//思想: root[i] = 前缀 [1..i] 的权值线段树版本, 两版本相减得到任意区间
+//需预定义: int ls[CNT], rs[CNT], sum[CNT], root[N];  CNT = n * (log2(n) + 1) 左右, 常开 n << 5
+//值域: 离散化到 [1, m]
+
+int build(int l, int r) {                //建空树, 返回版本根(其实只有 root[0] 需要)
+    int p = ++node_cnt;
+    if(l == r)    return p;
+    int mid = (l + r) >> 1;
+    ls[p] = build(l, mid);
+    rs[p] = build(mid + 1, r);
+    return p;
+}
+
+int update(int pre, int l, int r, int pos) {   //在 pre 版本基础上 pos 处 +1, 返回新版本根
+    int p = ++node_cnt;
+    ls[p] = ls[pre];
+    rs[p] = rs[pre];
+    sum[p] = sum[pre] + 1;
+    if(l == r)    return p;
+    int mid = (l + r) >> 1;
+    if(pos <= mid)    ls[p] = update(ls[pre], l, mid, pos);
+    else    rs[p] = update(rs[pre], mid + 1, r, pos);
+    return p;
+}
+
+int query(int u, int v, int l, int r, int k) { //u = root[l-1], v = root[r], 区间第 k 小
+    if(l == r)    return l;                    //返回离散化值, 原值 = xs[l - 1]
+    int mid = (l + r) >> 1;
+    int cnt_left = sum[ls[v]] - sum[ls[u]];    //左值域内的个数
+    if(k <= cnt_left)    return query(ls[u], ls[v], l, mid, k);
+    return query(rs[u], rs[v], mid + 1, r, k - cnt_left);
+}
+//配套:
+//1. 区间内 [x, y] 的个数: 两个版本的"按值域查个数"之差(或 rank 相减)
+//2. 区间众数 / 出现次数 > len/2: 按"左值域个数"判走向
+//3. 前缀版本在树上: root[u] = root[fa[u]] 上插入, 配合 LCA 可做树上路径第 k 小
+
+//分块: 万能暴力, 区间操作 O(sqrt n); 写不动高级数据结构时的保底方案
+//需预定义: int blk;  int belong[N];  块大小 = sqrt(n)
+//belong[i] = (i - 1) / blk + 1;  第 i 块区间 [L, R]
+
+void init_block() {
+    blk = sqrt(n);
+    for(int i = 1; i <= n; i++)    belong[i] = (i - 1) / blk + 1;
+    for(int i = 1; i <= belong[n]; i++) {        //预处理每块信息(如块内和/块内排序数组)
+        L[i] = (i - 1) * blk + 1;
+        R[i] = min(i * blk, n);
+        //如: 对块内排序维护有序数组, 支持"块内二分"
+    }
+}
+
+//区间加 + 单点查询: tag[块] 懒标记
+//void add(int l, int r, int val) {
+//    for(int i = l; i <= min(r, R[belong[l]]); i++)    a[i] += val;        //左碎块
+//    if(belong[l] != belong[r])
+//        for(int i = L[belong[r]]; i <= r; i++)    a[i] += val;            //右碎块
+//    for(int i = belong[l] + 1; i <= belong[r] - 1; i++)    tag[i] += val; //整块
+//}
+//int ask(int pos) { return a[pos] + tag[belong[pos]]; }
+
+//区间加 + 区间求和: 整块维护 sum[块] += val * 块长, 碎块暴力改并同步 sum
+//区间查询排名/第 k 小: 每块维护块内排序数组, 整块二分, 碎块暴力
+//带修改的"块内排序"用 vector 维护: 整块加不改序, 碎块修改后重建该块 O(sqrt n log n)
 
 //扩展欧几里得
 int exgcd(int a, int b, int& x, int& y) {
@@ -567,7 +1734,14 @@ bool solve(int a, int b, int c, int& x, int& y) {
     return true;
 }
 
-//逆元
+//逆元: 三种求法, 前提 gcd(a, mod) == 1
+
+//法一: 费马小定理, 要求 mod 为质数
+ll inv1(ll a) {
+    return fastpow_mod(a, MOD - 2);
+}
+
+//法二: 扩展欧几里得, 不要求 mod 为质数
 bool modular_inverse(int a, int p, int& x) {
     int y;
     int gcd = exgcd(a, p, x, y);
@@ -576,3 +1750,376 @@ bool modular_inverse(int a, int p, int& x) {
     if(x < 0)   x += p;
     return true;
 }
+
+//法三: 线性递推 O(n) 求 1..n 所有数的逆元, 要求 mod 为质数
+//需预定义: ll inv[N];   inv[i] = (mod - mod/i) * inv[mod % i] % mod
+void init_inv(int n) {
+    inv[1] = 1;
+    for(int i = 2; i <= n; i++)
+        inv[i] = (MOD - MOD / i) * inv[MOD % i] % MOD;
+}
+
+//中国剩余定理 CRT: 解 x ≡ r[i] (mod m[i]), 所有 m[i] 两两互质
+//需预定义: 快速幂 fastpow_mod 与 exgcd(见 扩展欧几里得.cpp)
+ll crt(ll r[], ll m[], int k) {
+    ll M = 1;
+    for(int i = 0; i < k; i++)    M *= m[i];
+    ll ans = 0;
+    for(int i = 0; i < k; i++) {
+        ll Mi = M / m[i];
+        ll x, y;
+        exgcd(Mi % m[i], m[i], x, y);        //Mi 在 mod m[i] 下的逆元(exgcd 版, 不要求 m[i] 为质数)
+        x = (x % m[i] + m[i]) % m[i];
+        ans = (ans + r[i] % M * Mi % M * x) % M;
+    }
+    return (ans % M + M) % M;                //最小非负解, 通解 x + t*M
+}
+
+//扩展 CRT(exCRT): 模数不保证互质, 两两合并
+//合并 x ≡ r1 (mod m1) 与 x ≡ r2 (mod m2): 解 r1 + m1*t ≡ r2 (mod m2)
+ll excrt(ll r[], ll m[], int k) {
+    ll m1 = m[0], r1 = r[0];
+    for(int i = 1; i < k; i++) {
+        ll m2 = m[i], r2 = r[i], x, y;
+        ll g = exgcd(m1, m2, x, y);
+        if((r2 - r1) % g != 0)    return -1;      //无解
+        x = x * ((r2 - r1) / g) % (m2 / g);
+        x = (x % (m2 / g) + (m2 / g)) % (m2 / g);
+        r1 = r1 + m1 * x;
+        m1 = m1 / g * m2;
+        r1 = (r1 % m1 + m1) % m1;
+    }
+    return (r1 % m1 + m1) % m1;
+}
+
+//高斯消元: 解线性方程组 / 异或方程组 / 求行列式与逆矩阵
+//需预定义: double a[N][N];  a[i][1..n] 为第 i 个方程的系数, a[i][n+1] 为常数
+//返回: 0 = 唯一解(x[i] = a[i][n+1]) / 1 = 无穷解 / -1 = 无解
+
+int gauss(int n) {
+    int row = 1;
+    for(int col = 1; col <= n; col++) {
+        int pivot = row;
+        for(int i = row + 1; i <= n; i++)                     //选主元: 该列绝对值最大
+            if(fabs(a[i][col]) > fabs(a[pivot][col]))    pivot = i;
+        if(fabs(a[pivot][col]) < eps)    continue;            //该列全 0, 自由变量
+        for(int j = col; j <= n + 1; j++)    swap(a[row][j], a[pivot][j]);
+        for(int j = n + 1; j >= col; j--)    a[row][j] /= a[row][col];
+        for(int i = 1; i <= n; i++)                            //消去其他行的该列
+            if(i != row && fabs(a[i][col]) > eps)
+                for(int j = n + 1; j >= col; j--)
+                    a[i][j] -= a[i][col] * a[row][j];
+        row++;
+    }
+    if(row <= n) {                                            //有自由变量
+        for(int i = row; i <= n; i++)
+            if(fabs(a[i][n + 1]) > eps)    return -1;         //0 = 非零 -> 无解
+        return 1;
+    }
+    return 0;
+}
+
+//异或方程组: 把 +-*/ 换成 ^, 常数/系数只有 0/1, 用 bitset 存储加速
+//需预定义: #define MAXN 2005;  bitset<MAXN> xa[MAXN];  xa[i] 的第 j 位为系数, 第 n+1 位为常数
+int gauss_xor(int n) {
+    int row = 1;
+    for(int col = 1; col <= n; col++) {
+        int pivot = row;
+        for(int i = row; i <= n; i++)
+            if(xa[i][col]) { pivot = i; break; }
+        if(!xa[pivot][col])    continue;
+        swap(xa[row], xa[pivot]);
+        for(int i = 1; i <= n; i++)
+            if(i != row && xa[i][col])    xa[i] ^= xa[row];
+        row++;
+    }
+    if(row <= n) {
+        for(int i = row; i <= n; i++)
+            if(xa[i][n + 1])    return -1;                     //无解
+        return 1;                                             //无穷解(自由变量取 0 即一个解)
+    }
+    return 0;                                                 //唯一解: x[i] = xa[i][n+1]
+}
+
+//配套: 求行列式: 高斯消元成上三角, det = 主对角线乘积 * (每交换一次行取一次负号)
+//     求逆矩阵: 把 [A | I] 消成 [I | A^-1]
+
+//线性基: 处理异或问题的工具, 维护一组基使任意子集异或都能被基的异或表示
+//需预定义: ll basis[64];   basis[i] = 最高位为 i 的基向量, 0 表示不存在
+//注意: 1e18 用 61 位基; 移位用 >> 而不是 (1LL << i), 防止 2^63 溢出
+
+bool insert(ll x) {                     //插入元素, 返回 false 表示 x 已被已有基表示
+    for(int i = 61; i >= 0; i--)
+        if(x >> i & 1) {
+            if(!basis[i]) {
+                basis[i] = x;
+                return true;
+            }
+            x ^= basis[i];              //消去最高位, 继续
+        }
+    return false;
+}
+
+ll get_max() {                          //子集异或最大值
+    ll res = 0;
+    for(int i = 61; i >= 0; i--)
+        if((res ^ basis[i]) > res)    res ^= basis[i];
+    return res;
+}
+
+//第 k 小异或: 先把基消成"每列至多一个 1"的阶梯形, 非零基按位升序排列后 k 的二进制分解
+void rebuild() {                        //阶梯化
+    for(int i = 61; i >= 0; i--)
+        for(int j = i - 1; j >= 0; j--)
+            if(basis[i] >> j & 1)    basis[i] ^= basis[j];
+    //把非零基提到数组 tmp[0..cnt-1] 按位升序, 则第 k 小 = 各 tmp 按 k 的二进制位异或
+}
+//配套: 判断 x 能否被表示 = !insert(x)(或 insert 后再 erase 掉); 线性相关判定同理
+//     多个线性基求并/交等进阶操作区域赛少见, 遇到现推
+
+//Miller-Rabin 素数判定: 判 2^64 内的数, 单次 O(k log^2 n), k 个底出错概率 4^-k
+//下面 7 个底对 < 2^64 的 n 是确定性的(无误差); 乘法用 __int128 防溢出
+
+ll mul_mod(ll a, ll b, ll mod) {
+    return (ll)((__int128)a * b % mod);
+}
+
+ll pow_mod(ll a, ll n, ll mod) {
+    a %= mod;
+    ll res = 1;
+    while(n) {
+        if(n & 1)    res = mul_mod(res, a, mod);
+        a = mul_mod(a, a, mod);
+        n >>= 1;
+    }
+    return res;
+}
+
+bool is_prime(ll n) {
+    if(n < 2)    return false;
+    for(ll p : {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37}) {   //小素数先试除
+        if(n % p == 0)    return n == p;
+    }
+    ll d = n - 1, s = 0;                     //n - 1 = d * 2^s, d 为奇数
+    while(d % 2 == 0) {
+        d /= 2;
+        s++;
+    }
+    for(ll a : {2LL, 325LL, 9375LL, 28178LL, 450775LL, 9780504LL, 1795265022LL}) {
+        if(a % n == 0)    continue;
+        ll x = pow_mod(a, d, n);
+        if(x == 1 || x == n - 1)    continue;
+        bool composite = true;
+        for(int i = 0; i < s - 1; i++) {
+            x = mul_mod(x, x, n);
+            if(x == n - 1) {
+                composite = false;
+                break;
+            }
+        }
+        if(composite)    return false;
+    }
+    return true;
+}
+
+//配套: 分解质因数用 Pollard-Rho(Miller-Rabin + 随机); n <= 1e12 用试除到 sqrt(n) 也行
+
+//Dinic 最大流: 一般图 O(V^2 E), 单位容量网络 O(E sqrt(V)), 实际远快于理论
+//需预定义: struct Edge { int to, cap, next; } e[2 * M];  int head[N], edge_cnt = 1;  int depth[N], cur[N];
+struct Edge {
+    int to, cap, next;
+} e[2 * M];
+int head[N], edge_cnt = 1;               //从 1 开始编号, i ^ 1 即反向边
+int depth[N], cur[N];
+
+void init() {
+    edge_cnt = 1;
+    memset(head, 0, sizeof(head));
+}
+
+void add_edge(int u, int v, int cap) {
+    e[++edge_cnt] = {v, cap, head[u]};
+    head[u] = edge_cnt;
+    e[++edge_cnt] = {u, 0, head[v]};     //反向边初始容量 0
+    head[v] = edge_cnt;
+}
+
+bool bfs(int s, int t) {                 //分层
+    memset(depth, 0, sizeof(depth));
+    queue<int> q;
+    q.push(s);
+    depth[s] = 1;
+    while(!q.empty()) {
+        int u = q.front();
+        q.pop();
+        for(int i = head[u]; i; i = e[i].next) {
+            int v = e[i].to;
+            if(e[i].cap && !depth[v]) {
+                depth[v] = depth[u] + 1;
+                q.push(v);
+            }
+        }
+    }
+    return depth[t] != 0;
+}
+
+int dfs(int u, int t, int flow) {
+    if(u == t)    return flow;
+    for(int& i = cur[u]; i; i = e[i].next) {         //当前弧优化
+        int v = e[i].to;
+        if(e[i].cap && depth[v] == depth[u] + 1) {
+            int f = dfs(v, t, min(flow, e[i].cap));
+            if(f) {
+                e[i].cap -= f;
+                e[i ^ 1].cap += f;
+                return f;
+            }
+        }
+    }
+    return 0;
+}
+
+ll dinic(int s, int t) {
+    ll ans = 0;
+    while(bfs(s, t)) {
+        memcpy(cur, head, sizeof(head));
+        int f;
+        while((f = dfs(s, t, INF)))
+            ans += f;
+    }
+    return ans;
+}
+//最大流 = 最小割; 最小割方案: 最后 bfs 后 depth != 0 的点集为 S 侧
+//无向边: add_edge(u, v, c); add_edge(v, u, c);  二分图匹配: 源->左->右->汇 容量 1
+
+//最小费用最大流 MCMF: 每次沿"费用最短路"增广(SPFA 找增广路)
+//复杂度上界 O(F * V * E), 实际远快; 要求无负费用环
+//需预定义: struct Edge { int to, cap, cost, next; } e[2 * M];  int head[N], edge_cnt = 1;
+//         int dist[N], pre[N];  bool inq[N];
+
+void add_edge(int u, int v, int cap, int cost) {
+    e[++edge_cnt] = {v, cap, cost, head[u]};
+    head[u] = edge_cnt;
+    e[++edge_cnt] = {u, 0, -cost, head[v]};      //反向边费用取负
+    head[v] = edge_cnt;
+}
+
+bool spfa(int s, int t) {
+    memset(dist, 0x3f, sizeof(dist));
+    memset(inq, 0, sizeof(inq));
+    queue<int> q;
+    q.push(s);
+    dist[s] = 0;
+    inq[s] = true;
+    while(!q.empty()) {
+        int u = q.front();
+        q.pop();
+        inq[u] = false;
+        for(int i = head[u]; i; i = e[i].next) {
+            int v = e[i].to;
+            if(e[i].cap && dist[v] > dist[u] + e[i].cost) {
+                dist[v] = dist[u] + e[i].cost;
+                pre[v] = i;                      //记录来边, 便于沿路推流
+                if(!inq[v]) {
+                    q.push(v);
+                    inq[v] = true;
+                }
+            }
+        }
+    }
+    return dist[t] != INF;
+}
+
+ll min_cost, max_flow;
+void mcmf(int s, int t) {
+    max_flow = 0;
+    min_cost = 0;
+    while(spfa(s, t)) {
+        int f = INF;
+        for(int v = t; v != s; v = e[pre[v] ^ 1].to)    f = min(f, e[pre[v]].cap);
+        for(int v = t; v != s; v = e[pre[v] ^ 1].to) {
+            e[pre[v]].cap -= f;
+            e[pre[v] ^ 1].cap += f;
+        }
+        max_flow += f;
+        min_cost += 1LL * f * dist[t];
+    }
+}
+//配套: 最大费用最大流: 边权取负求 MCMF, 答案取负; 固定流量最小费用: 达到目标流量即停
+//      二分图带权匹配(指派问题) = 源->左->右->汇, 中间边费用为代价, 求 MCMF
+
+//计算几何基础: 点/叉积/凸包/线段相交/点在多边形内
+const double eps = 1e-9;
+int sgn(double x) {
+    return x < -eps ? -1 : (x > eps ? 1 : 0);
+}
+
+struct Point {
+    double x, y;
+    Point operator+(Point p) { return {x + p.x, y + p.y}; }
+    Point operator-(Point p) { return {x - p.x, y - p.y}; }
+    Point operator*(double k) { return {x * k, y * k}; }
+    bool operator<(Point p) const { return x < p.x - eps || (fabs(x - p.x) < eps && y < p.y - eps); }
+};
+double dot(Point a, Point b) { return a.x * b.x + a.y * b.y; }
+double cross(Point a, Point b) { return a.x * b.y - a.y * b.x; }     //叉积, >0 表示 b 在 a 逆时针方向
+double cross(Point a, Point b, Point c) { return cross(b - a, c - a); }
+
+bool on_seg(Point a, Point b, Point p) {           //p 是否在线段 ab 上
+    return sgn(cross(a, b, p)) == 0 && sgn(dot(p - a, p - b)) <= 0;
+}
+bool seg_intersect(Point a, Point b, Point c, Point d) {   //线段 ab 与 cd 是否相交(含端点)
+    double d1 = cross(a, b, c), d2 = cross(a, b, d);
+    double d3 = cross(c, d, a), d4 = cross(c, d, b);
+    if(sgn(d1) * sgn(d2) < 0 && sgn(d3) * sgn(d4) < 0)    return true;
+    if(sgn(d1) == 0 && on_seg(a, b, c))    return true;
+    if(sgn(d2) == 0 && on_seg(a, b, d))    return true;
+    if(sgn(d3) == 0 && on_seg(c, d, a))    return true;
+    if(sgn(d4) == 0 && on_seg(c, d, b))    return true;
+    return false;
+}
+
+//凸包(Andrew): 返回凸包顶点按逆时针排列(不含共线点), O(n log n)
+vector<Point> convex_hull(vector<Point> p) {
+    sort(p.begin(), p.end());
+    vector<Point> hull;
+    for(int t = 0; t < 2; t++) {                     //t=0 下凸包, t=1 上凸包
+        int base = hull.size();
+        for(Point q : p) {
+            while((int)hull.size() - base >= 2 &&
+                  sgn(cross(hull[hull.size() - 2], hull.back(), q)) <= 0)    hull.pop_back();
+            hull.push_back(q);
+        }
+        hull.pop_back();                             //首尾点重复
+        reverse(p.begin(), p.end());
+    }
+    return hull;
+}
+
+double polygon_area(vector<Point>& poly) {           //鞋带公式, 顶点按序(任意多边形)
+    double s = 0;
+    for(int i = 0; i < (int)poly.size(); i++) {
+        Point a = poly[i], b = poly[(i + 1) % poly.size()];
+        s += cross(a, b);
+    }
+    return fabs(s) / 2;
+}
+
+//点在多边形内(绕数法): 返回 -1 在边界上, 1 在内部, 0 在外部; 多边形顶点按序
+int in_polygon(vector<Point>& poly, Point p) {
+    int wn = 0;
+    int n = poly.size();
+    for(int i = 0; i < n; i++) {
+        Point a = poly[i], b = poly[(i + 1) % n];
+        if(on_seg(a, b, p))    return -1;
+        if(sgn(a.y - p.y) <= 0) {
+            if(sgn(b.y - p.y) > 0 && sgn(cross(a, b, p)) > 0)    wn++;
+        }
+        else {
+            if(sgn(b.y - p.y) <= 0 && sgn(cross(a, b, p)) < 0)    wn--;
+        }
+    }
+    return wn != 0;
+}
+//配套: 点积求夹角 cos = dot/(|a||b|);  三点共线 sgn(cross(a,b,c)) == 0
+

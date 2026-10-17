@@ -12,3 +12,6 @@ a.out
 # cph 测试点缓存：文件名与源文件绝对路径的 md5 绑定，机器相关，不入库；
 # 本地保留即可让旧题在 cph 中继续运行
 .cph/
+
+# 模板 PDF 由 tools/templates2pdf.py 生成, 不入库
+templates/templates.pdf

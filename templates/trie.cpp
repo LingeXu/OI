@@ -1,3 +1,6 @@
+//需预定义: int trie[MAXN][MAXC], fail[MAXN], end_cnt[MAXN], trie_node_cnt;
+//         const int MAXC = 26 (字符集大小); MAX_BITS (二进制trie位数)
+
 //二进制trie
 void init() {
     trie_node_cnt = 0;
